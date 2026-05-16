@@ -5,8 +5,7 @@ import WidgetFrame from "../grid/WidgetFrame";
 import { useLayout, useSaveLayout, useApps } from "../api/hooks";
 import { WIDGETS } from "../widgets/registry";
 import WidgetPalette from "../grid/WidgetPalette";
-
-type SaveState = "idle" | "dirty" | "saving" | "saved";
+import SaveBadge, { type SaveState } from "../grid/SaveBadge";
 
 export default function AppPage() {
   const { slug = "" } = useParams();
@@ -16,12 +15,15 @@ export default function AppPage() {
   const [local, setLocal] = useState<GridWidget[]>([]);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const timer = useRef<number | null>(null);
 
   useEffect(() => {
     if (layoutQ.data) {
       setLocal(layoutQ.data.layout);
       setSaveState("idle");
+      if (layoutQ.data.updated_at)
+        setLastSavedAt(new Date(layoutQ.data.updated_at));
     }
   }, [layoutQ.data]);
 
@@ -32,11 +34,11 @@ export default function AppPage() {
     if (timer.current) window.clearTimeout(timer.current);
     timer.current = window.setTimeout(async () => {
       setSaveState("saving");
-      await save.mutateAsync(next);
+      const res = await save.mutateAsync(next);
+      if (res?.updated_at) setLastSavedAt(new Date(res.updated_at));
       setSaveState("saved");
       window.setTimeout(
-        () =>
-          setSaveState((s) => (s === "saved" ? "idle" : s)),
+        () => setSaveState((s) => (s === "saved" ? "idle" : s)),
         1400,
       );
     }, 800);
@@ -115,10 +117,12 @@ export default function AppPage() {
             )}
           </div>
         </div>
-        <ActionBar
-          saveState={saveState}
-          onAdd={() => setPaletteOpen(true)}
-        />
+        <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+          <SaveBadge state={saveState} lastSavedAt={lastSavedAt} />
+          <button type="button" onClick={() => setPaletteOpen(true)}>
+            + Add widget
+          </button>
+        </div>
       </header>
 
       <GridCanvas
@@ -152,44 +156,3 @@ export default function AppPage() {
   );
 }
 
-function ActionBar({
-  saveState,
-  onAdd,
-}: {
-  saveState: SaveState;
-  onAdd: () => void;
-}) {
-  const label =
-    saveState === "saving"
-      ? "Saving…"
-      : saveState === "saved"
-        ? "Saved"
-        : saveState === "dirty"
-          ? "Unsaved"
-          : "Synced";
-  const led =
-    saveState === "dirty"
-      ? "led--warn"
-      : saveState === "saving"
-        ? "led--warn"
-        : "led--ok";
-  return (
-    <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-      <span
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 10,
-          letterSpacing: "0.16em",
-          textTransform: "uppercase",
-          color: "var(--muted)",
-        }}
-      >
-        <span className={`led ${led}`} style={{ marginRight: 8 }} />
-        {label}
-      </span>
-      <button type="button" onClick={onAdd}>
-        + Add widget
-      </button>
-    </div>
-  );
-}

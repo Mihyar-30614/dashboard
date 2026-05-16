@@ -42,7 +42,9 @@ export function useLayout(screen: string) {
   return useQuery({
     queryKey: ["layout", screen],
     queryFn: () =>
-      api.get<{ layout: any[]; default?: boolean }>(`/api/layouts/${screen}`),
+      api.get<{ layout: any[]; default?: boolean; updated_at?: string }>(
+        `/api/layouts/${screen}`,
+      ),
   });
 }
 
@@ -50,7 +52,9 @@ export function useSaveLayout(screen: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (layout: any[]) =>
-      api.put(`/api/layouts/${screen}`, { layout }),
+      api.put<{ ok: boolean; updated_at: string }>(`/api/layouts/${screen}`, {
+        layout,
+      }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["layout", screen] }),
   });
 }

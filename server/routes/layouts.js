@@ -98,10 +98,14 @@ router.get("/:screen", async (req, res) => {
   if (!VALID_SCREENS.has(screen))
     return res.status(400).json({ error: "bad_screen" });
   const { rows } = await dbPool.query(
-    `SELECT layout FROM dashboard_layouts WHERE user_id=$1 AND screen=$2`,
+    `SELECT layout, updated_at FROM dashboard_layouts WHERE user_id=$1 AND screen=$2`,
     [req.user.id, screen],
   );
-  if (rows[0]) return res.json({ layout: rows[0].layout });
+  if (rows[0])
+    return res.json({
+      layout: rows[0].layout,
+      updated_at: rows[0].updated_at,
+    });
   res.json({ layout: defaultLayout(screen), default: true });
 });
 
@@ -112,14 +116,15 @@ router.put("/:screen", async (req, res) => {
   const reason = validateLayout(req.body?.layout);
   if (reason) return res.status(400).json({ error: reason });
 
-  await dbPool.query(
+  const { rows } = await dbPool.query(
     `INSERT INTO dashboard_layouts(user_id,screen,layout,updated_at)
      VALUES ($1,$2,$3,NOW())
      ON CONFLICT (user_id,screen)
-     DO UPDATE SET layout=EXCLUDED.layout, updated_at=NOW()`,
+     DO UPDATE SET layout=EXCLUDED.layout, updated_at=NOW()
+     RETURNING updated_at`,
     [req.user.id, screen, JSON.stringify(req.body.layout)],
   );
-  res.json({ ok: true });
+  res.json({ ok: true, updated_at: rows[0].updated_at });
 });
 
 export default router;
