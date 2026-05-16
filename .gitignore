@@ -4,6 +4,8 @@ node_modules/
 .env.test
 web/dist/
 web/tsconfig.tsbuildinfo
+web-prod/
+backups/
 logs/
 .superpowers/
 *.log

@@ -7,7 +7,9 @@ const port =
     ? Number(process.env.PORT || 4010)
     : Number(process.env.PORT_DEV || Number(process.env.PORT || 4010) + 100);
 
-buildApp().listen(port, () => {
-  console.log(`dashboard listening on ${port}`);
+const host = process.env.HOST || "127.0.0.1";
+
+buildApp().listen(port, host, () => {
+  console.log(`dashboard listening on ${host}:${port}`);
   if (process.env.POLLER !== "off") startPoller();
 });

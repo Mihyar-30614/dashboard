@@ -1,3 +1,5 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import express from "express";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
@@ -9,6 +11,9 @@ import appsRoutes from "./routes/apps.js";
 import metricsRoutes from "./routes/metrics.js";
 import layoutsRoutes from "./routes/layouts.js";
 import healthRoutes from "./routes/health.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const WEB_PROD = path.resolve(__dirname, "../web-prod");
 
 let seedAdminFn;
 if (process.env.NODE_ENV === "test") {
@@ -52,6 +57,12 @@ export function buildApp() {
       }
     });
   }
+
+  app.use(express.static(WEB_PROD));
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api")) return next();
+    res.sendFile(path.join(WEB_PROD, "index.html"));
+  });
 
   app.use((err, _req, res, _next) => {
     console.error(err);
