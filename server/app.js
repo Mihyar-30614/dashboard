@@ -4,6 +4,7 @@ import morgan from 'morgan';
 import { sessionMiddleware } from './auth/session.js';
 import authRoutes from './auth/routes.js';
 import invitesRoutes from './auth/invites.js';
+import widgetsRoutes from './routes/widgets.js';
 
 export function buildApp() {
   const app = express();
@@ -26,6 +27,7 @@ export function buildApp() {
   app.get('/health', (_req, res) => res.json({ ok: true, uptime_s: process.uptime() }));
   app.use('/api/auth', authRoutes);
   app.use('/api/invites', invitesRoutes);
+  app.use('/api/widgets', widgetsRoutes);
 
   app.use((err, _req, res, _next) => {
     console.error(err);
