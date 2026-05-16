@@ -1,0 +1,41 @@
+{
+  "sportly": {
+    "label": "Sportly",
+    "db": { "host": "localhost", "port": 5432, "database": "sportly", "user": "postgres" },
+    "health_url": "http://localhost:4003/health",
+    "pm2_name": "sportly-backend",
+    "nginx_log": "/var/log/nginx/sportly.access.log",
+    "kpis": [
+      { "key": "events_week", "label": "Events (7d)",
+        "sql": "SELECT COUNT(*)::int AS value FROM events WHERE created_at > NOW() - INTERVAL '7 days'" },
+      { "key": "participants_week", "label": "Participants (7d)",
+        "sql": "SELECT COUNT(*)::int AS value FROM event_participants WHERE created_at > NOW() - INTERVAL '7 days'" }
+    ]
+  },
+  "honeydoeh": {
+    "label": "Honey Do Eh",
+    "db": { "host": "localhost", "port": 5432, "database": "honeydoeh", "user": "postgres" },
+    "health_url": "http://localhost:4002/health",
+    "pm2_name": "honeydoeh-api",
+    "nginx_log": "/var/log/nginx/honeydoeh.access.log",
+    "kpis": [
+      { "key": "todos_done_week", "label": "Todos done (7d)",
+        "sql": "SELECT COUNT(*)::int AS value FROM todos WHERE completed=true AND COALESCE(updated_at,created_at) > NOW() - INTERVAL '7 days'" },
+      { "key": "active_projects", "label": "Active projects",
+        "sql": "SELECT COUNT(*)::int AS value FROM projects" }
+    ]
+  },
+  "debtmanager": {
+    "label": "DebtManager",
+    "db": { "host": "localhost", "port": 5432, "database": "debtapp", "user": "postgres" },
+    "health_url": "http://localhost:4006/health",
+    "pm2_name": "debtmanager-api",
+    "nginx_log": "/var/log/nginx/debtmanager.access.log",
+    "kpis": [
+      { "key": "total_debt", "label": "Total debt tracked",
+        "sql": "SELECT COALESCE(SUM(amount),0)::float8 AS value FROM debts" },
+      { "key": "payments_week", "label": "Payments (7d)",
+        "sql": "SELECT COUNT(*)::int AS value FROM payments WHERE COALESCE(paid_at,created_at) > NOW() - INTERVAL '7 days'" }
+    ]
+  }
+}
