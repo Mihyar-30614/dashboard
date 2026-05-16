@@ -5,6 +5,7 @@ import { sessionMiddleware } from './auth/session.js';
 import authRoutes from './auth/routes.js';
 import invitesRoutes from './auth/invites.js';
 import widgetsRoutes from './routes/widgets.js';
+import appsRoutes from './routes/apps.js';
 
 export function buildApp() {
   const app = express();
@@ -28,6 +29,7 @@ export function buildApp() {
   app.use('/api/auth', authRoutes);
   app.use('/api/invites', invitesRoutes);
   app.use('/api/widgets', widgetsRoutes);
+  app.use('/api/apps', appsRoutes);
 
   app.use((err, _req, res, _next) => {
     console.error(err);
