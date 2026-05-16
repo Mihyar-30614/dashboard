@@ -3,6 +3,9 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./auth/Login";
 import Shell from "./layout/Shell";
 import AppPage from "./pages/AppPage";
+import Overview from "./pages/Overview";
+import Settings from "./pages/Settings";
+import AcceptInvite from "./pages/AcceptInvite";
 import { useMe } from "./api/hooks";
 
 function Protected({ children }: { children: React.ReactNode }) {
@@ -22,6 +25,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/accept-invite" element={<AcceptInvite />} />
       <Route
         path="/*"
         element={
@@ -30,9 +34,9 @@ export default function App() {
           </Protected>
         }
       >
-        <Route index element={<div>Overview placeholder</div>} />
+        <Route index element={<Overview />} />
         <Route path="app/:slug" element={<AppPage />} />
-        <Route path="settings" element={<div>Settings placeholder</div>} />
+        <Route path="settings" element={<Settings />} />
       </Route>
     </Routes>
   );
