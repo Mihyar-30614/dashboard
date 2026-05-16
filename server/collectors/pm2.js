@@ -3,6 +3,8 @@ import { promisify } from "node:util";
 
 const execFileP = promisify(execFile);
 
+let resolvedBin = null;
+
 export function parseJlist(json) {
   const list = JSON.parse(json);
   const out = {};
@@ -17,11 +19,53 @@ export function parseJlist(json) {
   return out;
 }
 
+async function which(cmd) {
+  try {
+    const { stdout } = await execFileP("/usr/bin/env", ["which", cmd], {
+      timeout: 2_000,
+    });
+    const path = stdout.trim().split("\n")[0];
+    return path || null;
+  } catch {
+    return null;
+  }
+}
+
+async function resolvePm2Bin() {
+  if (resolvedBin) return resolvedBin;
+  const candidates = [
+    process.env.PM2_BIN,
+    "/usr/local/bin/pm2",
+    "/usr/bin/pm2",
+    "pm2",
+  ].filter(Boolean);
+
+  for (const bin of candidates) {
+    try {
+      await execFileP(bin, ["--version"], { timeout: 2_000 });
+      resolvedBin = bin;
+      return bin;
+    } catch {
+      /* try next */
+    }
+  }
+  const found = await which("pm2");
+  if (found) {
+    resolvedBin = found;
+    return found;
+  }
+  throw new Error("pm2_not_found");
+}
+
 export async function snapshot() {
-  const bin = process.env.PM2_BIN || "pm2";
+  const bin = await resolvePm2Bin();
   const { stdout } = await execFileP(bin, ["jlist"], {
     timeout: 5_000,
     maxBuffer: 8 * 1024 * 1024,
   });
   return parseJlist(stdout);
+}
+
+export function _resetForTests() {
+  resolvedBin = null;
 }
