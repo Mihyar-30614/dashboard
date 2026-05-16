@@ -54,6 +54,7 @@ export default function Overview() {
     const def = WIDGETS[kind];
     if (!def) return;
     const firstApp = (apps.data as any)?.[0]?.slug;
+    const nextY = local.reduce((m, w) => Math.max(m, w.y + w.h), 0);
     const next = [
       ...local,
       {
@@ -61,7 +62,7 @@ export default function Overview() {
         kind,
         app: firstApp,
         x: 0,
-        y: 100,
+        y: nextY,
         w: def.defaultSize.w,
         h: def.defaultSize.h,
         params: {},

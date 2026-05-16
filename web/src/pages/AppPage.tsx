@@ -57,6 +57,7 @@ export default function AppPage() {
   function add(kind: string) {
     const def = WIDGETS[kind];
     if (!def) return;
+    const nextY = local.reduce((m, w) => Math.max(m, w.y + w.h), 0);
     const next = [
       ...local,
       {
@@ -64,7 +65,7 @@ export default function AppPage() {
         kind,
         app: slug,
         x: 0,
-        y: 100,
+        y: nextY,
         w: def.defaultSize.w,
         h: def.defaultSize.h,
         params: {},
