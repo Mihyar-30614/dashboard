@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./auth/Login";
 import Shell from "./layout/Shell";
+import AppPage from "./pages/AppPage";
 import { useMe } from "./api/hooks";
 
 function Protected({ children }: { children: React.ReactNode }) {
@@ -30,7 +31,7 @@ export default function App() {
         }
       >
         <Route index element={<div>Overview placeholder</div>} />
-        <Route path="app/:slug" element={<div>App placeholder</div>} />
+        <Route path="app/:slug" element={<AppPage />} />
         <Route path="settings" element={<div>Settings placeholder</div>} />
       </Route>
     </Routes>
