@@ -1,10 +1,13 @@
-import 'dotenv/config';
-import { buildApp } from './app.js';
+import "dotenv/config";
+import { buildApp } from "./app.js";
+import { startPoller } from "./poller.js";
 
-const port = process.env.NODE_ENV === 'production'
-  ? Number(process.env.PORT || 4010)
-  : Number(process.env.PORT_DEV || (Number(process.env.PORT || 4010) + 100));
+const port =
+  process.env.NODE_ENV === "production"
+    ? Number(process.env.PORT || 4010)
+    : Number(process.env.PORT_DEV || Number(process.env.PORT || 4010) + 100);
 
 buildApp().listen(port, () => {
   console.log(`dashboard listening on ${port}`);
+  if (process.env.POLLER !== "off") startPoller();
 });
