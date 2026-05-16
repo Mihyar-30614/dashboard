@@ -1,8 +1,10 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import Sidebar from "./Sidebar";
 import ThemeToggle from "./ThemeToggle";
 import { useMe } from "../api/hooks";
+import { api } from "../api/client";
 
 function useNow() {
   const [now, setNow] = useState(new Date());
@@ -16,6 +18,18 @@ function useNow() {
 export default function Shell() {
   const me = useMe();
   const now = useNow();
+  const nav = useNavigate();
+  const qc = useQueryClient();
+
+  async function logout() {
+    try {
+      await api.post("/api/auth/logout");
+    } catch {
+      /* ignore */
+    }
+    qc.clear();
+    nav("/login", { replace: true });
+  }
   const stamp =
     now.toISOString().slice(11, 19) + " UTC · " + now.toISOString().slice(0, 10);
 
@@ -76,6 +90,29 @@ export default function Shell() {
             >
               {me.data?.email}
             </span>
+            <button
+              type="button"
+              onClick={logout}
+              title="Sign out"
+              style={{
+                width: 34,
+                height: 34,
+                padding: 0,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M15 17l5-5-5-5M20 12H9M12 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
             <ThemeToggle />
           </div>
         </header>
