@@ -3,11 +3,11 @@ import { useMetric } from "../api/hooks";
 
 export default function Pm2Card({
   app,
-  editing,
+
   onRemove,
 }: {
   app: string;
-  editing: boolean;
+
   onRemove?: () => void;
 }) {
   const q = useMetric("pm2", { app });
@@ -19,7 +19,7 @@ export default function Pm2Card({
   return (
     <WidgetFrame
       title={`pm2 · ${app}`}
-      editing={editing}
+
       onRemove={onRemove}
       error={(q.data as any)?.error || (q.error as any)?.message}
     >

@@ -3,11 +3,11 @@ import { useMetric } from "../api/hooks";
 
 export default function HttpErrors({
   app,
-  editing,
+
   onRemove,
 }: {
   app: string;
-  editing: boolean;
+
   onRemove?: () => void;
 }) {
   const q = useMetric("http_errors", { app });
@@ -16,7 +16,7 @@ export default function HttpErrors({
   return (
     <WidgetFrame
       title={`errors · ${app}`}
-      editing={editing}
+
       onRemove={onRemove}
       meta="last collector tick"
       error={(q.data as any)?.error || (q.error as any)?.message}

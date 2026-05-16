@@ -13,12 +13,12 @@ import { useMetric } from "../api/hooks";
 export default function ActiveTimeseries({
   app,
   params = {},
-  editing,
+
   onRemove,
 }: {
   app: string;
   params?: any;
-  editing: boolean;
+
   onRemove?: () => void;
 }) {
   const q = useMetric("active_timeseries", {
@@ -29,7 +29,7 @@ export default function ActiveTimeseries({
   return (
     <WidgetFrame
       title="Active users"
-      editing={editing}
+
       onRemove={onRemove}
       error={(q.data as any)?.error || (q.error as any)?.message}
     >

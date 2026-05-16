@@ -3,18 +3,18 @@ import { useMetric } from "../api/hooks";
 
 export default function DauCard({
   app,
-  editing,
+
   onRemove,
 }: {
   app: string;
-  editing: boolean;
+
   onRemove?: () => void;
 }) {
   const q = useMetric("dau", { app });
   return (
     <WidgetFrame
       title={`dau · ${app}`}
-      editing={editing}
+
       onRemove={onRemove}
       error={(q.data as any)?.error || (q.error as any)?.message}
     >

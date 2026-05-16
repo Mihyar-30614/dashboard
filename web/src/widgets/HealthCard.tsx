@@ -3,11 +3,11 @@ import { useMetric } from "../api/hooks";
 
 export default function HealthCard({
   app,
-  editing,
+
   onRemove,
 }: {
   app: string;
-  editing: boolean;
+
   onRemove?: () => void;
 }) {
   const q = useMetric("health", { app });
@@ -19,7 +19,7 @@ export default function HealthCard({
   return (
     <WidgetFrame
       title={`health · ${app}`}
-      editing={editing}
+
       onRemove={onRemove}
       error={(q.data as any)?.error || (q.error as any)?.message}
     >

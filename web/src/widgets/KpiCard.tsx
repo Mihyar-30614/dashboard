@@ -4,12 +4,12 @@ import { useMetric, useApps } from "../api/hooks";
 export default function KpiCard({
   app,
   params = {},
-  editing,
+
   onRemove,
 }: {
   app: string;
   params?: any;
-  editing: boolean;
+
   onRemove?: () => void;
 }) {
   const q = useMetric("kpi", { app, key: params.key });
@@ -22,7 +22,7 @@ export default function KpiCard({
   return (
     <WidgetFrame
       title={`kpi · ${app}`}
-      editing={editing}
+
       onRemove={onRemove}
       meta={label}
       error={(q.data as any)?.error || (q.error as any)?.message}

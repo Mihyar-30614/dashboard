@@ -3,11 +3,11 @@ import { useMetric } from "../api/hooks";
 
 export default function HttpLatency({
   app,
-  editing,
+
   onRemove,
 }: {
   app: string;
-  editing: boolean;
+
   onRemove?: () => void;
 }) {
   const q = useMetric("http_latency", { app });
@@ -15,7 +15,7 @@ export default function HttpLatency({
   return (
     <WidgetFrame
       title={`p95 latency · ${app}`}
-      editing={editing}
+
       onRemove={onRemove}
       meta="ms · last tick"
       error={(q.data as any)?.error || (q.error as any)?.message}

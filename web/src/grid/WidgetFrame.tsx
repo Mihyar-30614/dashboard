@@ -2,7 +2,6 @@ import React from "react";
 
 type Props = {
   title: string;
-  editing: boolean;
   onRemove?: () => void;
   error?: string | null;
   stale?: boolean;
@@ -12,7 +11,6 @@ type Props = {
 
 export default function WidgetFrame({
   title,
-  editing,
   onRemove,
   error,
   stale,
@@ -30,12 +28,15 @@ export default function WidgetFrame({
       }}
     >
       <div
+        className="widget-drag-handle"
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "baseline",
           marginBottom: 14,
           gap: 8,
+          cursor: "grab",
+          userSelect: "none",
         }}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -72,11 +73,13 @@ export default function WidgetFrame({
             </span>
           )}
           {stale && <span style={{ color: "var(--muted)" }}>stale</span>}
-          {editing && onRemove && (
+          {onRemove && (
             <button
               type="button"
+              onMouseDown={(e) => e.stopPropagation()}
               onClick={onRemove}
               style={{ padding: "2px 8px", fontSize: 11 }}
+              title="Remove"
             >
               ×
             </button>

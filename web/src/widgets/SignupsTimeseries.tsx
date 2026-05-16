@@ -13,12 +13,12 @@ import { useMetric } from "../api/hooks";
 export default function SignupsTimeseries({
   app,
   params = {},
-  editing,
+
   onRemove,
 }: {
   app: string;
   params?: any;
-  editing: boolean;
+
   onRemove?: () => void;
 }) {
   const q = useMetric("signups_timeseries", {
@@ -30,7 +30,7 @@ export default function SignupsTimeseries({
   return (
     <WidgetFrame
       title="Signups"
-      editing={editing}
+
       onRemove={onRemove}
       error={(q.data as any)?.error || (q.error as any)?.message}
     >

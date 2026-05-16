@@ -15,38 +15,43 @@ export type GridWidget = {
 
 type Props = {
   widgets: GridWidget[];
-  editing: boolean;
   onChange: (widgets: GridWidget[]) => void;
   renderWidget: (w: GridWidget) => React.ReactNode;
 };
 
-export default function GridCanvas({
-  widgets,
-  editing,
-  onChange,
-  renderWidget,
-}: Props) {
+export default function GridCanvas({ widgets, onChange, renderWidget }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<GridStack | null>(null);
+  const widgetsRef = useRef<GridWidget[]>(widgets);
+  const internalChangeRef = useRef(false);
 
+  // keep ref fresh
   useEffect(() => {
-    if (!rootRef.current) return;
+    widgetsRef.current = widgets;
+  }, [widgets]);
+
+  // init once
+  useEffect(() => {
+    if (!rootRef.current || gridRef.current) return;
     gridRef.current = GridStack.init(
       {
         column: 12,
-        cellHeight: 60,
-        margin: 8,
-        disableResize: !editing,
-        disableDrag: !editing,
+        cellHeight: 70,
+        margin: 10,
         float: false,
+        animate: true,
+        handle: ".widget-drag-handle",
+        resizable: { handles: "se,e,s" },
       },
       rootRef.current,
     );
-    const sync = () => {
+    gridRef.current.on("change", () => {
+      if (internalChangeRef.current) return;
       const nodes = gridRef.current!.engine.nodes as GridStackNode[];
       const next: GridWidget[] = nodes.map((n) => {
         const orig =
-          widgets.find((w) => w.id === n.id) || ({ params: {} } as any);
+          widgetsRef.current.find((w) => w.id === n.id) ||
+          ({ params: {} } as any);
         return {
           ...orig,
           id: n.id as string,
@@ -57,8 +62,7 @@ export default function GridCanvas({
         };
       });
       onChange(next);
-    };
-    gridRef.current.on("change", sync);
+    });
     return () => {
       gridRef.current?.destroy(false);
       gridRef.current = null;
@@ -66,16 +70,37 @@ export default function GridCanvas({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // sync widget set into gridstack when ids change
+  const idsKey = widgets.map((w) => w.id).join("|");
   useEffect(() => {
-    if (!gridRef.current) return;
-    if (editing) {
-      gridRef.current.enableMove(true);
-      gridRef.current.enableResize(true);
-    } else {
-      gridRef.current.enableMove(false);
-      gridRef.current.enableResize(false);
+    const grid = gridRef.current;
+    if (!grid) return;
+    internalChangeRef.current = true;
+    grid.batchUpdate();
+    const existingNodes = grid.engine.nodes.slice();
+    const incomingIds = new Set(widgets.map((w) => w.id));
+    // remove orphans
+    for (const n of existingNodes) {
+      if (!incomingIds.has(n.id as string)) {
+        if (n.el) grid.removeWidget(n.el, false);
+      }
     }
-  }, [editing]);
+    // add new
+    const haveIds = new Set(
+      grid.engine.nodes.map((n) => n.id as string),
+    );
+    for (const w of widgets) {
+      if (haveIds.has(w.id)) continue;
+      const el = rootRef.current?.querySelector(
+        `.grid-stack-item[gs-id="${w.id}"]`,
+      ) as HTMLElement | null;
+      if (el) grid.makeWidget(el);
+    }
+    grid.batchUpdate(false);
+    queueMicrotask(() => {
+      internalChangeRef.current = false;
+    });
+  }, [idsKey]);
 
   return (
     <div className="grid-stack" ref={rootRef}>

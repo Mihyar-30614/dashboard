@@ -3,18 +3,18 @@ import { useMetric } from "../api/hooks";
 
 export default function UsersTotal({
   app,
-  editing,
+
   onRemove,
 }: {
   app: string;
-  editing: boolean;
+
   onRemove?: () => void;
 }) {
   const q = useMetric("users_total", { app });
   return (
     <WidgetFrame
       title={`users · ${app}`}
-      editing={editing}
+
       onRemove={onRemove}
       error={(q.data as any)?.error || (q.error as any)?.message}
     >

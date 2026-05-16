@@ -13,12 +13,12 @@ import { useMetric } from "../api/hooks";
 export default function KpiTimeseries({
   app,
   params = {},
-  editing,
+
   onRemove,
 }: {
   app: string;
   params?: any;
-  editing: boolean;
+
   onRemove?: () => void;
 }) {
   const q = useMetric("kpi_timeseries", {
@@ -30,7 +30,7 @@ export default function KpiTimeseries({
   return (
     <WidgetFrame
       title={`KPI: ${params.key || ""}`}
-      editing={editing}
+
       onRemove={onRemove}
       error={(q.data as any)?.error || (q.error as any)?.message}
     >
