@@ -10,6 +10,11 @@ import metricsRoutes from "./routes/metrics.js";
 import layoutsRoutes from "./routes/layouts.js";
 import healthRoutes from "./routes/health.js";
 
+let seedAdminFn;
+if (process.env.NODE_ENV === "test") {
+  ({ seedAdmin: seedAdminFn } = await import("./auth/seed.js"));
+}
+
 export function buildApp() {
   const app = express();
   app.disable("x-powered-by");
@@ -36,6 +41,17 @@ export function buildApp() {
   app.use("/api/apps", appsRoutes);
   app.use("/api/metrics", metricsRoutes);
   app.use("/api/layouts", layoutsRoutes);
+
+  if (process.env.NODE_ENV === "test") {
+    app.post("/api/test/seed", async (req, res) => {
+      try {
+        await seedAdminFn(req.body.email, req.body.password);
+        res.json({ ok: true });
+      } catch (e) {
+        res.json({ ok: false, err: e.message });
+      }
+    });
+  }
 
   app.use((err, _req, res, _next) => {
     console.error(err);
