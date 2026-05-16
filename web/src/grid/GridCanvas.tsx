@@ -38,7 +38,7 @@ export default function GridCanvas({ widgets, onChange, renderWidget }: Props) {
         column: 12,
         cellHeight: 70,
         margin: 10,
-        float: false,
+        float: true,
         animate: true,
         handle: ".widget-drag-handle",
         resizable: { handles: "se,e,s" },
