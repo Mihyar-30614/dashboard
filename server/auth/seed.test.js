@@ -10,14 +10,23 @@ describe('seedAdmin', () => {
     expect(rows[0]).toEqual({ email: 'admin@example.com', is_admin: true });
   });
 
-  it('refuses if users already exist', async () => {
+  it('replaces any existing users with the new admin', async () => {
     await seedAdmin('a@example.com', 'zX9!muPpetDance#Lurking');
-    await expect(
-      seedAdmin('b@example.com', 'zX9!muPpetDance#Lurking')
-    ).rejects.toThrow('users_exist');
+    await seedAdmin('b@example.com', 'qP4#bRotherSailing!Moon');
+    const { rows } = await dbPool.query('SELECT email, is_admin FROM users');
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toEqual({ email: 'b@example.com', is_admin: true });
   });
 
   it('rejects weak passwords', async () => {
     await expect(seedAdmin('a@example.com', 'short')).rejects.toThrow('min_length');
+  });
+
+  it('does not wipe users when password is rejected', async () => {
+    await seedAdmin('a@example.com', 'zX9!muPpetDance#Lurking');
+    await expect(seedAdmin('b@example.com', 'short')).rejects.toThrow('min_length');
+    const { rows } = await dbPool.query('SELECT email FROM users');
+    expect(rows).toHaveLength(1);
+    expect(rows[0].email).toBe('a@example.com');
   });
 });
