@@ -15,6 +15,14 @@ export function buildApp() {
   }
   app.use(sessionMiddleware());
 
+  app.use('/api', (req, res, next) => {
+    if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+    const origin = req.headers.origin;
+    if (!origin) return next();
+    if (origin === process.env.APP_ORIGIN) return next();
+    return res.status(403).json({ error: 'bad_origin' });
+  });
+
   app.get('/health', (_req, res) => res.json({ ok: true, uptime_s: process.uptime() }));
   app.use('/api/auth', authRoutes);
   app.use('/api/invites', invitesRoutes);

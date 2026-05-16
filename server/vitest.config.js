@@ -6,6 +6,8 @@ export default defineConfig({
     include: ['**/*.test.js'],
     setupFiles: ['./test/helpers.js'],
     pool: 'forks',
+    poolOptions: { forks: { singleFork: true } },
+    fileParallelism: false,
     testTimeout: 10000
   }
 });
