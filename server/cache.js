@@ -16,11 +16,20 @@ export class Cache {
   get(key) {
     const e = this.map.get(key);
     if (!e) return undefined;
-    if (e.until < Date.now()) { this.map.delete(key); return undefined; }
+    if (e.until < Date.now()) {
+      this.map.delete(key);
+      return undefined;
+    }
     return e.value;
   }
 
-  size() { return this.map.size; }
+  size() {
+    return this.map.size;
+  }
+
+  clear() {
+    this.map.clear();
+  }
 }
 
 export const metricsCache = new Cache({ max: 1000 });
