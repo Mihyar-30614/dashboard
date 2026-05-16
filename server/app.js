@@ -30,11 +30,17 @@ export function buildApp() {
   }
   app.use(sessionMiddleware());
 
+  const allowedOrigins = new Set(
+    (process.env.APP_ORIGIN || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+  );
   app.use("/api", (req, res, next) => {
     if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
     const origin = req.headers.origin;
     if (!origin) return next();
-    if (origin === process.env.APP_ORIGIN) return next();
+    if (allowedOrigins.has(origin)) return next();
     return res.status(403).json({ error: "bad_origin" });
   });
 

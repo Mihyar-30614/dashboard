@@ -2,7 +2,7 @@ import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
   testDir: "e2e",
-  use: { baseURL: "http://localhost:5174", headless: true },
+  use: { baseURL: "http://localhost:4210", headless: true },
   webServer: [
     {
       command:
@@ -10,6 +10,6 @@ export default defineConfig({
       port: 4110,
       reuseExistingServer: true,
     },
-    { command: "npm run dev", port: 5174, reuseExistingServer: true },
+    { command: "npm run dev", port: 4210, reuseExistingServer: true },
   ],
 });
