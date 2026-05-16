@@ -1,0 +1,10 @@
+import 'dotenv/config';
+import { buildApp } from './app.js';
+
+const port = process.env.NODE_ENV === 'production'
+  ? Number(process.env.PORT || 4010)
+  : Number(process.env.PORT_DEV || (Number(process.env.PORT || 4010) + 100));
+
+buildApp().listen(port, () => {
+  console.log(`dashboard listening on ${port}`);
+});
