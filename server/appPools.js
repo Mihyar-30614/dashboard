@@ -1,5 +1,5 @@
-import pg from 'pg';
-import { loadApps } from './config.js';
+import pg from "pg";
+import { loadApps } from "./config.js";
 
 const { Pool } = pg;
 const pools = new Map();
@@ -13,9 +13,9 @@ export function getAppPool(slug) {
     ...cfg.db,
     max: 5,
     idleTimeoutMillis: 30_000,
-    connectionTimeoutMillis: 5_000
+    connectionTimeoutMillis: 5_000,
   });
-  pool.on('error', err => console.error('app pool error', slug, err.message));
+  pool.on("error", (err) => console.error("app pool error", slug, err.message));
   pools.set(slug, pool);
   return pool;
 }

@@ -1,15 +1,15 @@
-import bcrypt from 'bcrypt';
-import { isCommonPassword } from './common-passwords.js';
+import bcrypt from "bcrypt";
+import { isCommonPassword } from "./common-passwords.js";
 
 const COST = 12;
 const MIN_LEN = 12;
 
 export function validatePolicy(pw) {
-  if (typeof pw !== 'string' || pw.length < MIN_LEN) {
-    return { ok: false, reason: 'min_length' };
+  if (typeof pw !== "string" || pw.length < MIN_LEN) {
+    return { ok: false, reason: "min_length" };
   }
   if (isCommonPassword(pw)) {
-    return { ok: false, reason: 'common' };
+    return { ok: false, reason: "common" };
   }
   return { ok: true };
 }

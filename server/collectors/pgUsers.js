@@ -1,11 +1,11 @@
-const RANGE_DAYS = { '7d': 7, '30d': 30, '90d': 90 };
+const RANGE_DAYS = { "7d": 7, "30d": 30, "90d": 90 };
 
 export async function total(pool) {
-  const { rows } = await pool.query('SELECT COUNT(*)::int AS n FROM users');
+  const { rows } = await pool.query("SELECT COUNT(*)::int AS n FROM users");
   return rows[0].n;
 }
 
-export async function timeseries(pool, { range = '30d' } = {}) {
+export async function timeseries(pool, { range = "30d" } = {}) {
   const days = RANGE_DAYS[range] ?? 30;
   const { rows } = await pool.query(
     `WITH days AS (
@@ -22,7 +22,7 @@ export async function timeseries(pool, { range = '30d' } = {}) {
          ON date_trunc('day', u.created_at) = days.d
       GROUP BY days.d
       ORDER BY days.d`,
-    [days]
+    [days],
   );
   return rows;
 }

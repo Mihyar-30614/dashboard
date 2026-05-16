@@ -1,20 +1,20 @@
-const RANGE_DAYS = { '7d': 7, '30d': 30, '90d': 90 };
+const RANGE_DAYS = { "7d": 7, "30d": 30, "90d": 90 };
 
 async function activeWithin(pool, interval) {
   const { rows } = await pool.query(
     `SELECT COUNT(DISTINCT user_id)::int AS n
        FROM refresh_tokens
       WHERE last_used_at > NOW() - $1::interval`,
-    [interval]
+    [interval],
   );
   return rows[0].n;
 }
 
-export const dau = pool => activeWithin(pool, '1 day');
-export const wau = pool => activeWithin(pool, '7 days');
-export const mau = pool => activeWithin(pool, '30 days');
+export const dau = (pool) => activeWithin(pool, "1 day");
+export const wau = (pool) => activeWithin(pool, "7 days");
+export const mau = (pool) => activeWithin(pool, "30 days");
 
-export async function timeseries(pool, { range = '30d' } = {}) {
+export async function timeseries(pool, { range = "30d" } = {}) {
   const days = RANGE_DAYS[range] ?? 30;
   const { rows } = await pool.query(
     `WITH days AS (
@@ -32,7 +32,7 @@ export async function timeseries(pool, { range = '30d' } = {}) {
         AND rt.last_used_at <  days.d + INTERVAL '1 day'
       GROUP BY days.d
       ORDER BY days.d`,
-    [days]
+    [days],
   );
   return rows;
 }
