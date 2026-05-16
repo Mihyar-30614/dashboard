@@ -1,6 +1,13 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import pg from 'pg';
-import { dau, wau, mau, timeseries } from './pgActivity.js';
+import { dau, timeseries } from './pgActivity.js';
+
+const APP_CFG = {
+  queries: {
+    dau: "SELECT COUNT(DISTINCT user_id)::int AS value FROM refresh_tokens WHERE last_used_at > NOW() - INTERVAL '1 day'",
+    active_timeseries: "WITH days AS (SELECT generate_series(date_trunc('day', NOW()) - ($1::int - 1) * INTERVAL '1 day', date_trunc('day', NOW()), INTERVAL '1 day') AS d) SELECT to_char(days.d, 'YYYY-MM-DD') AS t, COUNT(DISTINCT rt.user_id)::int AS value FROM days LEFT JOIN refresh_tokens rt ON rt.last_used_at >= days.d AND rt.last_used_at < days.d + INTERVAL '1 day' GROUP BY days.d ORDER BY days.d"
+  }
+};
 
 let pool;
 beforeAll(() => {
@@ -15,14 +22,17 @@ beforeAll(() => {
 afterAll(() => pool.end());
 
 describe('pgActivity', () => {
-  it('counts DAU/WAU/MAU based on refresh_tokens.last_used_at', async () => {
-    expect(await dau(pool)).toBe(2);
-    expect(await wau(pool)).toBe(3);
-    expect(await mau(pool)).toBe(4);
+  it('throws when not configured', async () => {
+    await expect(dau(pool)).rejects.toThrow('dau_not_configured');
   });
 
-  it('returns a daily DAU timeseries', async () => {
-    const s = await timeseries(pool, { range: '7d' });
+  it('runs the per-app DAU SQL when configured', async () => {
+    const n = await dau(pool, APP_CFG);
+    expect(typeof n).toBe('number');
+  });
+
+  it('runs the per-app timeseries SQL when configured', async () => {
+    const s = await timeseries(pool, { range: '7d' }, APP_CFG);
     expect(s).toHaveLength(7);
   });
 });

@@ -36,10 +36,12 @@ async function getNginxAgg(appCfg) {
 }
 
 const KINDS = {
-  users_total: ({ pool }) => pgUsers.total(pool),
-  signups_timeseries: ({ pool, params }) => pgUsers.timeseries(pool, params),
-  dau: ({ pool }) => pgActivity.dau(pool),
-  active_timeseries: ({ pool, params }) => pgActivity.timeseries(pool, params),
+  users_total: ({ pool, appCfg }) => pgUsers.total(pool, appCfg),
+  signups_timeseries: ({ pool, params, appCfg }) =>
+    pgUsers.timeseries(pool, params, appCfg),
+  dau: ({ pool, appCfg }) => pgActivity.dau(pool, appCfg),
+  active_timeseries: ({ pool, params, appCfg }) =>
+    pgActivity.timeseries(pool, params, appCfg),
   health: ({ appCfg }) => checkHealth(appCfg.health_url),
   pm2: async ({ appCfg }) =>
     (await pm2Snapshot())[appCfg.pm2_name] || { status: "unknown" },

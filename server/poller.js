@@ -29,11 +29,11 @@ async function pollApp(app) {
 
   await Promise.allSettled([
     pgUsers
-      .total(pool)
+      .total(pool, app)
       .then((v) => persistSample(app.slug, "users_total", v))
       .catch((e) => errors.push({ k: "users_total", m: e.message })),
     pgActivity
-      .dau(pool)
+      .dau(pool, app)
       .then((v) => persistSample(app.slug, "dau", v))
       .catch((e) => errors.push({ k: "dau", m: e.message })),
     checkHealth(app.health_url)

@@ -10,6 +10,12 @@
     "health_url": "http://localhost:4003/health",
     "pm2_name": "sportly-backend",
     "nginx_log": "/var/log/nginx/sportly.access.log",
+    "queries": {
+      "users_total": "SELECT COUNT(*)::int AS value FROM users",
+      "dau": "SELECT COUNT(DISTINCT user_id)::int AS value FROM refresh_tokens WHERE created_at > NOW() - INTERVAL '1 day'",
+      "signups_timeseries": "WITH days AS (SELECT generate_series(date_trunc('day', NOW()) - ($1::int - 1) * INTERVAL '1 day', date_trunc('day', NOW()), INTERVAL '1 day') AS d) SELECT to_char(days.d, 'YYYY-MM-DD') AS t, COALESCE(COUNT(u.id), 0)::int AS value FROM days LEFT JOIN users u ON date_trunc('day', u.created_at) = days.d GROUP BY days.d ORDER BY days.d",
+      "active_timeseries": "WITH days AS (SELECT generate_series(date_trunc('day', NOW()) - ($1::int - 1) * INTERVAL '1 day', date_trunc('day', NOW()), INTERVAL '1 day') AS d) SELECT to_char(days.d, 'YYYY-MM-DD') AS t, COUNT(DISTINCT rt.user_id)::int AS value FROM days LEFT JOIN refresh_tokens rt ON rt.created_at >= days.d AND rt.created_at < days.d + INTERVAL '1 day' GROUP BY days.d ORDER BY days.d"
+    },
     "kpis": [
       {
         "key": "events_week",
@@ -34,6 +40,12 @@
     "health_url": "http://localhost:4002/health",
     "pm2_name": "honeydoeh-api",
     "nginx_log": "/var/log/nginx/honeydoeh.access.log",
+    "queries": {
+      "users_total": "SELECT COUNT(*)::int AS value FROM users",
+      "dau": "SELECT COUNT(DISTINCT user_id)::int AS value FROM refresh_tokens WHERE created_at > NOW() - INTERVAL '1 day'",
+      "signups_timeseries": "WITH days AS (SELECT generate_series(date_trunc('day', NOW()) - ($1::int - 1) * INTERVAL '1 day', date_trunc('day', NOW()), INTERVAL '1 day') AS d) SELECT to_char(days.d, 'YYYY-MM-DD') AS t, COALESCE(COUNT(u.id), 0)::int AS value FROM days LEFT JOIN users u ON date_trunc('day', u.created_at) = days.d GROUP BY days.d ORDER BY days.d",
+      "active_timeseries": "WITH days AS (SELECT generate_series(date_trunc('day', NOW()) - ($1::int - 1) * INTERVAL '1 day', date_trunc('day', NOW()), INTERVAL '1 day') AS d) SELECT to_char(days.d, 'YYYY-MM-DD') AS t, COUNT(DISTINCT rt.user_id)::int AS value FROM days LEFT JOIN refresh_tokens rt ON rt.created_at >= days.d AND rt.created_at < days.d + INTERVAL '1 day' GROUP BY days.d ORDER BY days.d"
+    },
     "kpis": [
       {
         "key": "todos_done_week",
@@ -58,6 +70,12 @@
     "health_url": "http://localhost:4006/health",
     "pm2_name": "debtmanager-api",
     "nginx_log": "/var/log/nginx/debtmanager.access.log",
+    "queries": {
+      "users_total": "SELECT COUNT(*)::int AS value FROM users",
+      "dau": "SELECT COUNT(DISTINCT user_id)::int AS value FROM payments WHERE COALESCE(paid_at, created_at) > NOW() - INTERVAL '1 day'",
+      "signups_timeseries": "WITH days AS (SELECT generate_series(date_trunc('day', NOW()) - ($1::int - 1) * INTERVAL '1 day', date_trunc('day', NOW()), INTERVAL '1 day') AS d) SELECT to_char(days.d, 'YYYY-MM-DD') AS t, COALESCE(COUNT(u.id), 0)::int AS value FROM days LEFT JOIN users u ON date_trunc('day', u.created_at) = days.d GROUP BY days.d ORDER BY days.d",
+      "active_timeseries": "WITH days AS (SELECT generate_series(date_trunc('day', NOW()) - ($1::int - 1) * INTERVAL '1 day', date_trunc('day', NOW()), INTERVAL '1 day') AS d) SELECT to_char(days.d, 'YYYY-MM-DD') AS t, COUNT(DISTINCT p.user_id)::int AS value FROM days LEFT JOIN payments p ON COALESCE(p.paid_at, p.created_at) >= days.d AND COALESCE(p.paid_at, p.created_at) < days.d + INTERVAL '1 day' GROUP BY days.d ORDER BY days.d"
+    },
     "kpis": [
       {
         "key": "total_debt",
