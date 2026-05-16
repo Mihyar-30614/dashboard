@@ -8,6 +8,7 @@ import widgetsRoutes from "./routes/widgets.js";
 import appsRoutes from "./routes/apps.js";
 import metricsRoutes from "./routes/metrics.js";
 import layoutsRoutes from "./routes/layouts.js";
+import healthRoutes from "./routes/health.js";
 
 export function buildApp() {
   const app = express();
@@ -27,9 +28,8 @@ export function buildApp() {
     return res.status(403).json({ error: "bad_origin" });
   });
 
-  app.get("/health", (_req, res) =>
-    res.json({ ok: true, uptime_s: process.uptime() }),
-  );
+  app.use("/health", healthRoutes);
+  app.use("/api", healthRoutes);
   app.use("/api/auth", authRoutes);
   app.use("/api/invites", invitesRoutes);
   app.use("/api/widgets", widgetsRoutes);
