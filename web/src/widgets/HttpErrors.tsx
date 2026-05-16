@@ -11,15 +11,21 @@ export default function HttpErrors({
   onRemove?: () => void;
 }) {
   const q = useMetric("http_errors", { app });
+  const v = (q.data as any)?.data;
+  const bad = typeof v === "number" && v > 0;
   return (
     <WidgetFrame
-      title="Errors (last tick)"
+      title={`errors · ${app}`}
       editing={editing}
       onRemove={onRemove}
+      meta="last collector tick"
       error={(q.data as any)?.error || (q.error as any)?.message}
     >
-      <div style={{ fontSize: 32, fontWeight: 600 }}>
-        {q.isLoading ? "…" : ((q.data as any)?.data ?? "—")}
+      <div
+        className="metric metric--xl"
+        style={{ color: bad ? "var(--bad)" : "var(--text)" }}
+      >
+        {q.isLoading ? "…" : (v ?? "—")}
       </div>
     </WidgetFrame>
   );

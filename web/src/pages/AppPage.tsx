@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import GridCanvas, { type GridWidget } from "../grid/GridCanvas";
 import WidgetFrame from "../grid/WidgetFrame";
-import { useLayout, useSaveLayout } from "../api/hooks";
+import { useLayout, useSaveLayout, useApps } from "../api/hooks";
 import { WIDGETS } from "../widgets/registry";
 import EditModeBar from "../grid/EditModeBar";
 import WidgetPalette from "../grid/WidgetPalette";
@@ -10,6 +10,7 @@ import WidgetPalette from "../grid/WidgetPalette";
 export default function AppPage() {
   const { slug = "" } = useParams();
   const layoutQ = useLayout(slug);
+  const apps = useApps();
   const save = useSaveLayout(slug);
   const [editing, setEditing] = useState(false);
   const [local, setLocal] = useState<GridWidget[]>([]);
@@ -23,25 +24,12 @@ export default function AppPage() {
     }
   }, [layoutQ.data]);
 
-  function startEdit() {
-    setEditing(true);
-  }
-  function cancel() {
-    setLocal(layoutQ.data?.layout || []);
-    setDirty(false);
-    setEditing(false);
-  }
-  async function persist() {
-    await save.mutateAsync(local);
-    setDirty(false);
-    setEditing(false);
-  }
+  const meta = (apps.data as any[])?.find((a) => a.slug === slug);
 
   function remove(id: string) {
     setLocal((arr) => arr.filter((w) => w.id !== id));
     setDirty(true);
   }
-
   function add(kind: string) {
     const def = WIDGETS[kind];
     if (!def) return;
@@ -62,15 +50,60 @@ export default function AppPage() {
   }
 
   return (
-    <div>
-      <h2 style={{ margin: "0 0 8px" }}>{slug}</h2>
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <header style={{ display: "flex", alignItems: "baseline", gap: 18 }}>
+        <div>
+          <span className="eyebrow">property</span>
+          <h1 style={{ marginTop: 6 }}>
+            <em
+              style={{
+                fontStyle: "italic",
+                fontWeight: 500,
+                color: "var(--accent)",
+              }}
+            >
+              {meta?.label || slug}
+            </em>
+          </h1>
+          <div
+            style={{
+              marginTop: 6,
+              display: "flex",
+              gap: 14,
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              color: "var(--muted)",
+              letterSpacing: "0.06em",
+            }}
+          >
+            <span>slug: {slug}</span>
+            {meta && (
+              <>
+                <span>· pm2: {meta.pm2_status}</span>
+                <span>
+                  · health: {meta.health?.ok ? "up" : "down"}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      </header>
+
       <EditModeBar
         editing={editing}
         dirty={dirty}
         saving={save.isPending}
-        onEdit={startEdit}
-        onSave={persist}
-        onCancel={cancel}
+        onEdit={() => setEditing(true)}
+        onSave={async () => {
+          await save.mutateAsync(local);
+          setDirty(false);
+          setEditing(false);
+        }}
+        onCancel={() => {
+          setLocal(layoutQ.data?.layout || []);
+          setDirty(false);
+          setEditing(false);
+        }}
         onAdd={() => setPaletteOpen(true)}
       />
       <GridCanvas

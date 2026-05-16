@@ -13,13 +13,16 @@ export default function DauCard({
   const q = useMetric("dau", { app });
   return (
     <WidgetFrame
-      title="DAU"
+      title={`dau · ${app}`}
       editing={editing}
       onRemove={onRemove}
       error={(q.data as any)?.error || (q.error as any)?.message}
     >
-      <div style={{ fontSize: 32, fontWeight: 600 }}>
+      <div className="metric metric--xl">
         {q.isLoading ? "…" : ((q.data as any)?.data ?? "—")}
+      </div>
+      <div className="eyebrow" style={{ marginTop: 10, fontSize: 9 }}>
+        active · last 24h
       </div>
     </WidgetFrame>
   );

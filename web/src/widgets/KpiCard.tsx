@@ -21,12 +21,13 @@ export default function KpiCard({
     : params.key;
   return (
     <WidgetFrame
-      title={label || "KPI"}
+      title={`kpi · ${app}`}
       editing={editing}
       onRemove={onRemove}
+      meta={label}
       error={(q.data as any)?.error || (q.error as any)?.message}
     >
-      <div style={{ fontSize: 28, fontWeight: 600 }}>
+      <div className="metric metric--lg">
         {q.isLoading ? "…" : ((q.data as any)?.data ?? "—")}
       </div>
     </WidgetFrame>

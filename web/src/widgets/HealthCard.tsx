@@ -13,23 +13,50 @@ export default function HealthCard({
   const q = useMetric("health", { app });
   const data = (q.data as any)?.data;
   const ok = data?.ok;
+  const state = ok === undefined ? "—" : ok ? "UP" : "DOWN";
+  const led = ok === undefined ? "" : ok ? "led--ok" : "led--bad";
+
   return (
     <WidgetFrame
-      title="Health"
+      title={`health · ${app}`}
       editing={editing}
       onRemove={onRemove}
       error={(q.data as any)?.error || (q.error as any)?.message}
     >
       <div
         style={{
-          fontSize: 18,
-          color: ok ? "var(--chart-2)" : "var(--chart-4)",
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          marginBottom: 8,
         }}
       >
-        {ok === undefined ? "…" : ok ? "UP" : "DOWN"}
+        <span className={`led ${led}`} style={{ width: 12, height: 12 }} />
+        <span
+          className="metric metric--lg"
+          style={{
+            color:
+              ok === undefined
+                ? "var(--muted)"
+                : ok
+                  ? "var(--ok)"
+                  : "var(--bad)",
+          }}
+        >
+          {state}
+        </span>
       </div>
-      <div style={{ color: "var(--muted)", fontSize: 12 }}>
-        {data ? `${data.latency_ms}ms · ${data.status ?? data.error ?? ""}` : ""}
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 11,
+          color: "var(--muted)",
+          letterSpacing: "0.04em",
+        }}
+      >
+        {data
+          ? `${data.latency_ms}ms · http ${data.status ?? data.error ?? "—"}`
+          : "probing…"}
       </div>
     </WidgetFrame>
   );

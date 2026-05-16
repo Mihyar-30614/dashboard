@@ -16,55 +16,83 @@ export default function WidgetPalette({
     ([, w]) => w.scope === scope || w.scope === "both",
   );
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        right: 0,
-        bottom: 0,
-        width: 280,
-        background: "var(--panel)",
-        borderLeft: "1px solid var(--border)",
-        padding: 16,
-        zIndex: 20,
-      }}
-    >
+    <>
       <div
+        onClick={onClose}
         style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: 12,
+          position: "fixed",
+          inset: 0,
+          background: "color-mix(in srgb, var(--ink) 30%, transparent)",
+          zIndex: 19,
+          animation: "fadeUp 200ms ease-out both",
+        }}
+      />
+      <aside
+        style={{
+          position: "fixed",
+          top: 0,
+          right: 0,
+          bottom: 0,
+          width: 340,
+          background: "var(--panel)",
+          borderLeft: "1px solid var(--rule)",
+          padding: 24,
+          zIndex: 20,
+          overflowY: "auto",
+          boxShadow: "-24px 0 60px -24px rgba(0,0,0,0.25)",
+          animation: "fadeUp 240ms ease-out both",
         }}
       >
-        <strong>Add widget</strong>
-        <button onClick={onClose}>×</button>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {items.map(([kind, def]) => (
-          <button
-            key={kind}
-            onClick={() => {
-              onPick(kind);
-              onClose();
-            }}
-            style={{
-              textAlign: "left",
-              padding: 10,
-              border: "1px solid var(--border)",
-              borderRadius: 6,
-              background: "transparent",
-              color: "var(--text)",
-            }}
-          >
-            <div>
-              <strong>{def.label}</strong>
-            </div>
-            <div style={{ color: "var(--muted)", fontSize: 12 }}>
-              kind: {kind}
-            </div>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 18,
+          }}
+        >
+          <div>
+            <div className="eyebrow">palette · {scope}</div>
+            <h3 style={{ marginTop: 4, marginBottom: 0 }}>Add widget</h3>
+          </div>
+          <button type="button" onClick={onClose}>
+            ✕
           </button>
-        ))}
-      </div>
-    </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {items.map(([kind, def]) => (
+            <button
+              key={kind}
+              type="button"
+              onClick={() => {
+                onPick(kind);
+                onClose();
+              }}
+              style={{
+                textAlign: "left",
+                padding: "12px 14px",
+                background: "transparent",
+                color: "var(--text)",
+                borderColor: "var(--border)",
+              }}
+            >
+              <div style={{ fontWeight: 600, fontSize: 14 }}>{def.label}</div>
+              <div
+                style={{
+                  marginTop: 4,
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                  color: "var(--muted)",
+                }}
+              >
+                {kind} · {def.defaultSize.w}×{def.defaultSize.h}
+              </div>
+            </button>
+          ))}
+        </div>
+      </aside>
+    </>
   );
 }
