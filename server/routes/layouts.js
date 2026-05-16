@@ -2,6 +2,7 @@ import { Router } from "express";
 import { dbPool } from "../db.js";
 import { requireAuth } from "../auth/session.js";
 import { KIND_INDEX } from "../widgets/registry.js";
+import { loadApps } from "../config.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -24,10 +25,29 @@ function validateLayout(arr) {
 
 function defaultLayout(screen) {
   if (screen === "overview") {
-    return [
-      { id: "d1", kind: "health", x: 0, y: 0, w: 4, h: 2, params: {} },
-      { id: "d2", kind: "pm2", x: 4, y: 0, w: 4, h: 2, params: {} },
-    ];
+    const slugs = Object.keys(loadApps());
+    return slugs.flatMap((slug, i) => [
+      {
+        id: `h_${slug}`,
+        kind: "health",
+        app: slug,
+        x: 0,
+        y: i * 2,
+        w: 4,
+        h: 2,
+        params: {},
+      },
+      {
+        id: `p_${slug}`,
+        kind: "pm2",
+        app: slug,
+        x: 4,
+        y: i * 2,
+        w: 4,
+        h: 2,
+        params: {},
+      },
+    ]);
   }
   return [
     {
