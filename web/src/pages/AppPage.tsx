@@ -5,6 +5,7 @@ import WidgetFrame from "../grid/WidgetFrame";
 import { useLayout, useSaveLayout } from "../api/hooks";
 import { WIDGETS } from "../widgets/registry";
 import EditModeBar from "../grid/EditModeBar";
+import WidgetPalette from "../grid/WidgetPalette";
 
 export default function AppPage() {
   const { slug = "" } = useParams();
@@ -13,6 +14,7 @@ export default function AppPage() {
   const [editing, setEditing] = useState(false);
   const [local, setLocal] = useState<GridWidget[]>([]);
   const [dirty, setDirty] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   useEffect(() => {
     if (layoutQ.data) {
@@ -69,7 +71,7 @@ export default function AppPage() {
         onEdit={startEdit}
         onSave={persist}
         onCancel={cancel}
-        onAdd={() => add(prompt("kind?") || "")}
+        onAdd={() => setPaletteOpen(true)}
       />
       <GridCanvas
         widgets={local}
@@ -100,6 +102,12 @@ export default function AppPage() {
             />
           );
         }}
+      />
+      <WidgetPalette
+        open={paletteOpen}
+        scope="app"
+        onPick={add}
+        onClose={() => setPaletteOpen(false)}
       />
     </div>
   );
