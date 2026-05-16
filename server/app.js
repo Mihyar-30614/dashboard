@@ -7,6 +7,7 @@ import invitesRoutes from "./auth/invites.js";
 import widgetsRoutes from "./routes/widgets.js";
 import appsRoutes from "./routes/apps.js";
 import metricsRoutes from "./routes/metrics.js";
+import layoutsRoutes from "./routes/layouts.js";
 
 export function buildApp() {
   const app = express();
@@ -34,6 +35,7 @@ export function buildApp() {
   app.use("/api/widgets", widgetsRoutes);
   app.use("/api/apps", appsRoutes);
   app.use("/api/metrics", metricsRoutes);
+  app.use("/api/layouts", layoutsRoutes);
 
   app.use((err, _req, res, _next) => {
     console.error(err);
