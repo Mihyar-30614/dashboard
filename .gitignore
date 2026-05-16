@@ -1,0 +1,8 @@
+node_modules/
+.env
+.env.local
+web/dist/
+logs/
+.superpowers/
+*.log
+.DS_Store
