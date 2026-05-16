@@ -17,11 +17,9 @@ export default function AppPage() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const timer = useRef<number | null>(null);
-  const skipNextChange = useRef(true);
 
   useEffect(() => {
     if (layoutQ.data) {
-      skipNextChange.current = true;
       setLocal(layoutQ.data.layout);
       setSaveState("idle");
     }
@@ -46,10 +44,6 @@ export default function AppPage() {
 
   function onChange(next: GridWidget[]) {
     setLocal(next);
-    if (skipNextChange.current) {
-      skipNextChange.current = false;
-      return;
-    }
     scheduleSave(next);
   }
 
