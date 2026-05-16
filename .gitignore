@@ -3,6 +3,7 @@ node_modules/
 .env.local
 .env.test
 web/dist/
+web/tsconfig.tsbuildinfo
 logs/
 .superpowers/
 *.log
