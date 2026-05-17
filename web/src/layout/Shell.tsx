@@ -1,10 +1,13 @@
 import { Outlet, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { LogOut } from "lucide-react";
 import Sidebar from "./Sidebar";
 import ThemeToggle from "./ThemeToggle";
 import { useMe } from "../api/hooks";
 import { api } from "../api/client";
+import { hasDirty } from "../grid/savingRegistry";
+import { useToast } from "../ui/Toast";
 
 function useNow() {
   const [now, setNow] = useState(new Date());
@@ -20,12 +23,22 @@ export default function Shell() {
   const now = useNow();
   const nav = useNavigate();
   const qc = useQueryClient();
+  const toast = useToast();
 
   async function logout() {
+    if (hasDirty()) {
+      const ok = window.confirm(
+        "Layout has unsaved changes. Sign out anyway?",
+      );
+      if (!ok) return;
+    }
     try {
       await api.post("/api/auth/logout");
-    } catch {
-      /* ignore */
+    } catch (e) {
+      toast.error(
+        "Logout failed: " + ((e as Error).message ?? "unknown"),
+      );
+      return;
     }
     qc.clear();
     nav("/login", { replace: true });
@@ -103,15 +116,7 @@ export default function Shell() {
                 justifyContent: "center",
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M15 17l5-5-5-5M20 12H9M12 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+              <LogOut size={16} strokeWidth={1.7} />
             </button>
             <ThemeToggle />
           </div>
