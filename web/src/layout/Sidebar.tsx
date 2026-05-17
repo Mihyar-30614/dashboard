@@ -1,18 +1,24 @@
-import { NavLink } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useEffect, useState, type ReactNode } from "react";
 import { useQueryClient, useIsFetching } from "@tanstack/react-query";
 import {
   ChevronLeft,
   ChevronRight,
   Hammer,
   LayoutDashboard,
+  LogOut,
+  Moon,
   RefreshCw,
   Settings,
   Sparkles,
+  Sun,
   Trophy,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
+import { api } from "../api/client";
+import { hasDirty } from "../grid/savingRegistry";
+import { useToast } from "../ui/Toast";
 
 type Item = {
   slug: string;
@@ -59,10 +65,43 @@ export default function Sidebar() {
 
   const qc = useQueryClient();
   const fetching = useIsFetching() > 0;
+  const nav = useNavigate();
+  const toast = useToast();
+
+  const [theme, setTheme] = useState<"light" | "dark">(
+    () =>
+      (typeof document !== "undefined" &&
+        (document.documentElement.dataset.theme as "light" | "dark")) ||
+      "light",
+  );
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("theme", theme);
+    window.dispatchEvent(new CustomEvent("themechange", { detail: theme }));
+  }, [theme]);
 
   function refresh() {
     if (fetching) return;
     qc.invalidateQueries();
+  }
+
+  async function logout() {
+    if (hasDirty()) {
+      const ok = window.confirm(
+        "Layout has unsaved changes. Sign out anyway?",
+      );
+      if (!ok) return;
+    }
+    try {
+      await api.post("/api/auth/logout");
+    } catch (e) {
+      toast.error(
+        "Logout failed: " + ((e as Error).message ?? "unknown"),
+      );
+      return;
+    }
+    qc.clear();
+    nav("/login", { replace: true });
   }
 
   return (
@@ -213,46 +252,36 @@ export default function Sidebar() {
           textAlign: collapsed ? "center" : "left",
         }}
       >
-        <button
-          type="button"
+        <UtilButton
           onClick={refresh}
           disabled={fetching}
+          collapsed={collapsed}
+          label="Refresh"
           title={collapsed ? "Refresh data" : undefined}
-          aria-label="Refresh dashboard data"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: collapsed ? "center" : "flex-start",
-            gap: 8,
-            width: "100%",
-            padding: "8px 0",
-            background: "transparent",
-            border: "none",
-            color: "var(--muted)",
-            fontFamily: "var(--font-mono)",
-            fontSize: collapsed ? 14 : 10,
-            letterSpacing: collapsed ? "0" : "0.18em",
-            textTransform: "uppercase",
-            cursor: fetching ? "default" : "pointer",
-            opacity: fetching ? 0.6 : 1,
-          }}
-        >
-          <span
-            aria-hidden
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 22,
-              height: 22,
-              flexShrink: 0,
-              animation: fetching ? "spin 0.9s linear infinite" : "none",
-            }}
-          >
-            <RefreshCw size={16} strokeWidth={1.7} />
-          </span>
-          {!collapsed && <span>Refresh</span>}
-        </button>
+          ariaLabel="Refresh dashboard data"
+          icon={<RefreshCw size={16} strokeWidth={1.7} />}
+          spinning={fetching}
+        />
+        <UtilButton
+          onClick={() => setTheme((t) => (t === "light" ? "dark" : "light"))}
+          collapsed={collapsed}
+          label={theme === "light" ? "Dark mode" : "Light mode"}
+          title={
+            collapsed
+              ? theme === "light"
+                ? "Switch to dark"
+                : "Switch to light"
+              : undefined
+          }
+          ariaLabel="Toggle theme"
+          icon={
+            theme === "light" ? (
+              <Moon size={16} strokeWidth={1.7} />
+            ) : (
+              <Sun size={16} strokeWidth={1.7} />
+            )
+          }
+        />
         <NavLink
           to="/settings"
           title={collapsed ? "Settings" : undefined}
@@ -285,7 +314,78 @@ export default function Sidebar() {
           </span>
           {!collapsed && <span>Settings</span>}
         </NavLink>
+        <UtilButton
+          onClick={logout}
+          collapsed={collapsed}
+          label="Sign out"
+          title={collapsed ? "Sign out" : undefined}
+          ariaLabel="Sign out"
+          icon={<LogOut size={16} strokeWidth={1.7} />}
+        />
       </div>
     </aside>
+  );
+}
+
+function UtilButton({
+  onClick,
+  disabled,
+  collapsed,
+  label,
+  title,
+  ariaLabel,
+  icon,
+  spinning,
+}: {
+  onClick: () => void;
+  disabled?: boolean;
+  collapsed: boolean;
+  label: string;
+  title?: string;
+  ariaLabel: string;
+  icon: ReactNode;
+  spinning?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      aria-label={ariaLabel}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: collapsed ? "center" : "flex-start",
+        gap: 8,
+        width: "100%",
+        padding: "8px 0",
+        background: "transparent",
+        border: "none",
+        color: "var(--muted)",
+        fontFamily: "var(--font-mono)",
+        fontSize: 10,
+        letterSpacing: collapsed ? "0" : "0.18em",
+        textTransform: "uppercase",
+        cursor: disabled ? "default" : "pointer",
+        opacity: disabled ? 0.6 : 1,
+      }}
+    >
+      <span
+        aria-hidden
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 22,
+          height: 22,
+          flexShrink: 0,
+          animation: spinning ? "spin 0.9s linear infinite" : "none",
+        }}
+      >
+        {icon}
+      </span>
+      {!collapsed && <span>{label}</span>}
+    </button>
   );
 }

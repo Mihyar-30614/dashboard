@@ -1,13 +1,7 @@
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { LogOut } from "lucide-react";
 import Sidebar from "./Sidebar";
-import ThemeToggle from "./ThemeToggle";
 import { useMe } from "../api/hooks";
-import { api } from "../api/client";
-import { hasDirty } from "../grid/savingRegistry";
-import { useToast } from "../ui/Toast";
 
 function useNow() {
   const [now, setNow] = useState(new Date());
@@ -21,28 +15,6 @@ function useNow() {
 export default function Shell() {
   const me = useMe();
   const now = useNow();
-  const nav = useNavigate();
-  const qc = useQueryClient();
-  const toast = useToast();
-
-  async function logout() {
-    if (hasDirty()) {
-      const ok = window.confirm(
-        "Layout has unsaved changes. Sign out anyway?",
-      );
-      if (!ok) return;
-    }
-    try {
-      await api.post("/api/auth/logout");
-    } catch (e) {
-      toast.error(
-        "Logout failed: " + ((e as Error).message ?? "unknown"),
-      );
-      return;
-    }
-    qc.clear();
-    nav("/login", { replace: true });
-  }
   const stamp =
     now.toISOString().slice(11, 19) + " UTC · " + now.toISOString().slice(0, 10);
 
@@ -87,39 +59,15 @@ export default function Shell() {
             <span style={{ color: "var(--ink-soft)" }}>{stamp}</span>
           </div>
 
-          <div
+          <span
             style={{
-              display: "flex",
-              gap: 12,
-              alignItems: "center",
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              color: "var(--muted)",
             }}
           >
-            <span
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                color: "var(--muted)",
-              }}
-            >
-              {me.data?.email}
-            </span>
-            <button
-              type="button"
-              onClick={logout}
-              title="Sign out"
-              style={{
-                width: 34,
-                height: 34,
-                padding: 0,
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <LogOut size={16} strokeWidth={1.7} />
-            </button>
-            <ThemeToggle />
-          </div>
+            {me.data?.email}
+          </span>
         </header>
         <main
           style={{
