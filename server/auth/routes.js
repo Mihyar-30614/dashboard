@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
-import { dbPool } from '../db.js';
+import { dbPool, query } from '../db.js';
 import { verifyPassword, needsRehash, hashPassword } from './password.js';
 import { createSession, destroySession, requireAuth } from './session.js';
 import { consumeInviteToken } from './invites.js';
@@ -33,7 +33,7 @@ router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) return res.status(400).json({ error: 'missing_fields' });
 
-  const { rows } = await dbPool.query(
+  const { rows } = await query(
     `SELECT id, password_hash, is_active FROM users WHERE email=$1`,
     [String(email).toLowerCase()]
   );
@@ -44,9 +44,9 @@ router.post('/login', loginLimiter, async (req, res) => {
 
   if (needsRehash(user.password_hash)) {
     const newHash = await hashPassword(password);
-    await dbPool.query('UPDATE users SET password_hash=$1 WHERE id=$2', [newHash, user.id]);
+    await query('UPDATE users SET password_hash=$1 WHERE id=$2', [newHash, user.id]);
   }
-  await dbPool.query('UPDATE users SET last_login_at=NOW() WHERE id=$1', [user.id]);
+  await query('UPDATE users SET last_login_at=NOW() WHERE id=$1', [user.id]);
 
   const session = await createSession(user.id, req.headers['user-agent']);
   setSessionCookie(res, session.id);

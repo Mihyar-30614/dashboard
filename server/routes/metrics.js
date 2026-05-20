@@ -9,7 +9,7 @@ import { runKpi } from "../collectors/pgKpi.js";
 import { snapshot as pm2Snapshot } from "../collectors/pm2.js";
 import { checkHealth } from "../collectors/health.js";
 import { aggregate } from "../collectors/nginx.js";
-import { dbPool } from "../db.js";
+import { query } from "../db.js";
 
 const TTL_MS = 30_000;
 const ERR_TTL_MS = 10_000;
@@ -56,7 +56,7 @@ const KINDS = {
   kpi_timeseries: async ({ params, appCfg }) => {
     const slug = appCfg.slug;
     const days = { "7d": 7, "30d": 30, "90d": 90 }[params.range] || 30;
-    const { rows } = await dbPool.query(
+    const { rows } = await query(
       `WITH days AS (
          SELECT generate_series(date_trunc('day', NOW()) - ($1::int - 1) * INTERVAL '1 day',
                                 date_trunc('day', NOW()), INTERVAL '1 day') AS d

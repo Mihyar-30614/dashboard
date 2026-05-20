@@ -1,4 +1,4 @@
-import { dbPool } from "./db.js";
+import { query } from "./db.js";
 import { loadApps } from "./config.js";
 import { getAppPool } from "./appPools.js";
 import * as pgUsers from "./collectors/pgUsers.js";
@@ -17,7 +17,7 @@ let lastTick = { startedAt: null, ms: null, errors: [] };
 
 async function persistSample(slug, metric, value) {
   if (!Number.isFinite(value)) return;
-  await dbPool.query(
+  await query(
     `INSERT INTO metric_samples(app_slug, metric, value) VALUES ($1,$2,$3)`,
     [slug, metric, value],
   );
@@ -68,7 +68,7 @@ export async function runTick() {
 }
 
 async function trimOld() {
-  await dbPool.query(
+  await query(
     `DELETE FROM metric_samples WHERE taken_at < NOW() - INTERVAL '${SAMPLE_RETENTION_DAYS} days'`,
   );
 }

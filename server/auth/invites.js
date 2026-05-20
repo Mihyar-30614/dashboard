@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { Router } from 'express';
-import { dbPool } from '../db.js';
+import { query } from '../db.js';
 import { requireAuth, requireAdmin } from './session.js';
 
 const router = Router();
@@ -10,7 +10,7 @@ router.use(requireAuth);
 
 router.post('/', requireAdmin, async (req, res) => {
   const token = crypto.randomBytes(32).toString('hex');
-  const { rows } = await dbPool.query(
+  const { rows } = await query(
     `INSERT INTO invites(token,email,created_by,expires_at)
      VALUES ($1,$2,$3, NOW() + INTERVAL '${TTL_DAYS} days')
      RETURNING id, token, email, expires_at`,
@@ -20,7 +20,7 @@ router.post('/', requireAdmin, async (req, res) => {
 });
 
 router.get('/', requireAdmin, async (_req, res) => {
-  const { rows } = await dbPool.query(
+  const { rows } = await query(
     `SELECT id, email, created_at, expires_at, used_at
        FROM invites
       WHERE used_at IS NULL AND expires_at > NOW()
@@ -30,7 +30,7 @@ router.get('/', requireAdmin, async (_req, res) => {
 });
 
 router.delete('/:id', requireAdmin, async (req, res) => {
-  await dbPool.query(
+  await query(
     `UPDATE invites SET used_at=NOW() WHERE id=$1 AND used_at IS NULL`,
     [req.params.id]
   );
@@ -40,7 +40,7 @@ router.delete('/:id', requireAdmin, async (req, res) => {
 export default router;
 
 export async function consumeInviteToken(token) {
-  const { rows } = await dbPool.query(
+  const { rows } = await query(
     `SELECT id FROM invites
       WHERE token=$1 AND used_at IS NULL AND expires_at > NOW()`,
     [token]

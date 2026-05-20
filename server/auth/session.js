@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { dbPool } from '../db.js';
+import { query } from '../db.js';
 
 const SLIDING_THRESHOLD_DAYS = 7;
 
@@ -13,7 +13,7 @@ function ttlDays() {
 export async function createSession(userId, userAgent, daysOverride) {
   const id = crypto.randomUUID();
   const days = daysOverride ?? ttlDays();
-  const { rows } = await dbPool.query(
+  const { rows } = await query(
     `INSERT INTO sessions(id,user_id,expires_at,user_agent)
      VALUES ($1,$2,NOW() + ($3 || ' days')::interval,$4)
      RETURNING id, expires_at`,
@@ -27,7 +27,7 @@ export async function loadSession(id) {
   const hit = cache.get(id);
   if (hit && hit.until > Date.now()) return hit.row;
 
-  const { rows } = await dbPool.query(
+  const { rows } = await query(
     `SELECT s.id, s.user_id, s.created_at, s.expires_at, u.email, u.is_admin
        FROM sessions s
        JOIN users u ON u.id = s.user_id
@@ -52,7 +52,7 @@ export async function rotateIfStale(id) {
 
 export async function destroySession(id) {
   cache.delete(id);
-  await dbPool.query('DELETE FROM sessions WHERE id=$1', [id]);
+  await query('DELETE FROM sessions WHERE id=$1', [id]);
 }
 
 export function sessionMiddleware() {

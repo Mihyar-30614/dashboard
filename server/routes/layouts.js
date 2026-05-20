@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { dbPool } from "../db.js";
+import { query } from "../db.js";
 import { requireAuth } from "../auth/session.js";
 import { KIND_INDEX } from "../widgets/registry.js";
 import { loadApps } from "../config.js";
@@ -97,7 +97,7 @@ router.get("/:screen", async (req, res) => {
   const screen = req.params.screen;
   if (!VALID_SCREENS.has(screen))
     return res.status(400).json({ error: "bad_screen" });
-  const { rows } = await dbPool.query(
+  const { rows } = await query(
     `SELECT layout, updated_at FROM dashboard_layouts WHERE user_id=$1 AND screen=$2`,
     [req.user.id, screen],
   );
@@ -116,7 +116,7 @@ router.put("/:screen", async (req, res) => {
   const reason = validateLayout(req.body?.layout);
   if (reason) return res.status(400).json({ error: reason });
 
-  const { rows } = await dbPool.query(
+  const { rows } = await query(
     `INSERT INTO dashboard_layouts(user_id,screen,layout,updated_at)
      VALUES ($1,$2,$3,NOW())
      ON CONFLICT (user_id,screen)
