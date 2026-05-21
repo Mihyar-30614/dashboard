@@ -3,7 +3,7 @@ import { requireAuth } from "../auth/session.js";
 
 const router = Router();
 
-const UPSTREAM = (process.env.SEER_API_URL || "https://seer.mihyarmas.com").replace(/\/+$/, "");
+const UPSTREAM = (process.env.SEER_API_URL || "https://seer.mihyarmas.com/api").replace(/\/+$/, "");
 const API_KEY = process.env.SEER_API_KEY || process.env.API_KEY || "";
 
 const HOP_BY_HOP = new Set([
