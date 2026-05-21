@@ -6,12 +6,17 @@ import { useLayout, useSaveLayout, useApps } from "../api/hooks";
 import { WIDGETS } from "../widgets/registry";
 import WidgetPalette from "../grid/WidgetPalette";
 import SaveBadge, { type SaveState } from "../grid/SaveBadge";
+import EmptyLayout from "../grid/EmptyLayout";
+import { setPageDirty } from "../grid/savingRegistry";
+import { useToast } from "../ui/Toast";
+import WidgetErrorBoundary from "../grid/WidgetErrorBoundary";
 
 export default function AppPage() {
   const { slug = "" } = useParams();
   const layoutQ = useLayout(slug);
   const apps = useApps();
   const save = useSaveLayout(slug);
+  const toast = useToast();
   const [local, setLocal] = useState<GridWidget[]>([]);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("idle");
@@ -27,6 +32,11 @@ export default function AppPage() {
     }
   }, [layoutQ.data]);
 
+  useEffect(() => {
+    setPageDirty(`app:${slug}`, saveState === "dirty" || saveState === "saving");
+    return () => setPageDirty(`app:${slug}`, false);
+  }, [saveState, slug]);
+
   const meta = (apps.data as any[])?.find((a) => a.slug === slug);
 
   function scheduleSave(next: GridWidget[]) {
@@ -34,13 +44,20 @@ export default function AppPage() {
     if (timer.current) window.clearTimeout(timer.current);
     timer.current = window.setTimeout(async () => {
       setSaveState("saving");
-      const res = await save.mutateAsync(next);
-      if (res?.updated_at) setLastSavedAt(new Date(res.updated_at));
-      setSaveState("saved");
-      window.setTimeout(
-        () => setSaveState((s) => (s === "saved" ? "idle" : s)),
-        1400,
-      );
+      try {
+        const res = await save.mutateAsync(next);
+        if (res?.updated_at) setLastSavedAt(new Date(res.updated_at));
+        setSaveState("saved");
+        window.setTimeout(
+          () => setSaveState((s) => (s === "saved" ? "idle" : s)),
+          1400,
+        );
+      } catch (e) {
+        setSaveState("dirty");
+        toast.error(
+          "Failed to save layout: " + ((e as Error).message ?? "unknown"),
+        );
+      }
     }, 800);
   }
 
@@ -126,27 +143,37 @@ export default function AppPage() {
         </div>
       </header>
 
-      <GridCanvas
-        widgets={local}
-        onChange={onChange}
-        renderWidget={(w) => {
-          const def = WIDGETS[w.kind];
-          if (!def)
+      {layoutQ.data && local.length === 0 ? (
+        <EmptyLayout scope="app" onAdd={() => setPaletteOpen(true)} />
+      ) : (
+        <GridCanvas
+          widgets={local}
+          onChange={onChange}
+          renderWidget={(w) => {
+            const def = WIDGETS[w.kind];
+            if (!def)
+              return (
+                <WidgetFrame title={w.kind} onRemove={() => remove(w.id)}>
+                  Unknown widget
+                </WidgetFrame>
+              );
+            const C = def.Component;
             return (
-              <WidgetFrame title={w.kind} onRemove={() => remove(w.id)}>
-                Unknown widget
-              </WidgetFrame>
+              <WidgetErrorBoundary
+                key={w.id}
+                kind={w.kind}
+                onRemove={() => remove(w.id)}
+              >
+                <C
+                  app={w.app}
+                  params={w.params}
+                  onRemove={() => remove(w.id)}
+                />
+              </WidgetErrorBoundary>
             );
-          const C = def.Component;
-          return (
-            <C
-              app={w.app}
-              params={w.params}
-              onRemove={() => remove(w.id)}
-            />
-          );
-        }}
-      />
+          }}
+        />
+      )}
       <WidgetPalette
         open={paletteOpen}
         scope="app"
