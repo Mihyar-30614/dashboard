@@ -11,6 +11,7 @@ import appsRoutes from "./routes/apps.js";
 import metricsRoutes from "./routes/metrics.js";
 import layoutsRoutes from "./routes/layouts.js";
 import healthRoutes from "./routes/health.js";
+import seerRoutes from "./routes/seer.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WEB_PROD = path.resolve(__dirname, "../web-prod");
@@ -52,6 +53,7 @@ export function buildApp() {
   app.use("/api/apps", appsRoutes);
   app.use("/api/metrics", metricsRoutes);
   app.use("/api/layouts", layoutsRoutes);
+  app.use("/api/seer", seerRoutes);
 
   if (process.env.NODE_ENV === "test") {
     app.post("/api/test/seed", async (req, res) => {
