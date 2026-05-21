@@ -10,6 +10,10 @@ import HttpErrors from "./HttpErrors";
 import HttpLatency from "./HttpLatency";
 import KpiCard from "./KpiCard";
 import KpiTimeseries from "./KpiTimeseries";
+import KpiSparkline from "./KpiSparkline";
+import KpiDelta from "./KpiDelta";
+import KpiTarget from "./KpiTarget";
+import KpiMultiStat from "./KpiMultiStat";
 
 export type WidgetDef = {
   label: string;
@@ -84,5 +88,29 @@ export const WIDGETS: Record<string, WidgetDef> = {
     defaultSize: { w: 6, h: 4 },
     scope: "app" as const,
     Component: KpiTimeseries,
+  },
+  kpi_sparkline: {
+    label: "KPI · sparkline",
+    defaultSize: { w: 3, h: 2 },
+    scope: "app" as const,
+    Component: KpiSparkline,
+  },
+  kpi_delta: {
+    label: "KPI · delta vs prior",
+    defaultSize: { w: 3, h: 2 },
+    scope: "app" as const,
+    Component: KpiDelta,
+  },
+  kpi_target: {
+    label: "KPI · target",
+    defaultSize: { w: 3, h: 2 },
+    scope: "app" as const,
+    Component: KpiTarget,
+  },
+  kpi_multistat: {
+    label: "KPI · multi-stat",
+    defaultSize: { w: 6, h: 2 },
+    scope: "app" as const,
+    Component: KpiMultiStat,
   },
 } as const;

@@ -18,6 +18,12 @@ export const WIDGETS = [
         values: ["7d", "30d", "90d"],
         default: "30d",
       },
+      {
+        name: "chart_type",
+        type: "enum",
+        values: ["line", "bar", "area"],
+        default: "line",
+      },
     ],
   },
   {
@@ -34,6 +40,12 @@ export const WIDGETS = [
     scope: "app",
     paramsSchema: [
       { name: "range", type: "enum", values: ["7d", "30d"], default: "30d" },
+      {
+        name: "chart_type",
+        type: "enum",
+        values: ["line", "bar", "area"],
+        default: "line",
+      },
     ],
   },
   {
@@ -91,7 +103,66 @@ export const WIDGETS = [
         values: ["7d", "30d", "90d"],
         default: "30d",
       },
+      {
+        name: "chart_type",
+        type: "enum",
+        values: ["line", "bar", "area"],
+        default: "line",
+      },
     ],
+  },
+  {
+    kind: "kpi_sparkline",
+    label: "KPI · sparkline",
+    defaultSize: { w: 3, h: 2 },
+    scope: "app",
+    paramsSchema: [
+      { name: "key", type: "string", required: true },
+      {
+        name: "range",
+        type: "enum",
+        values: ["7d", "30d", "90d"],
+        default: "30d",
+      },
+    ],
+  },
+  {
+    kind: "kpi_delta",
+    label: "KPI · delta vs prior",
+    defaultSize: { w: 3, h: 2 },
+    scope: "app",
+    paramsSchema: [
+      { name: "key", type: "string", required: true },
+      {
+        name: "range",
+        type: "enum",
+        values: ["7d", "30d", "90d"],
+        default: "30d",
+      },
+    ],
+  },
+  {
+    kind: "kpi_target",
+    label: "KPI · target",
+    defaultSize: { w: 3, h: 2 },
+    scope: "app",
+    paramsSchema: [
+      { name: "key", type: "string", required: true },
+      { name: "target", type: "number", required: true },
+      {
+        name: "direction",
+        type: "enum",
+        values: ["higher_is_better", "lower_is_better"],
+        default: "higher_is_better",
+      },
+    ],
+  },
+  {
+    kind: "kpi_multistat",
+    label: "KPI · multi-stat",
+    defaultSize: { w: 6, h: 2 },
+    scope: "app",
+    paramsSchema: [{ name: "keys", type: "string", required: true }],
   },
 ];
 
