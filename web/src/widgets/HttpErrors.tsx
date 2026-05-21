@@ -1,5 +1,6 @@
 import WidgetFrame from "../grid/WidgetFrame";
 import { useMetric } from "../api/hooks";
+import Skeleton from "../grid/Skeleton";
 
 export default function HttpErrors({
   app,
@@ -25,7 +26,11 @@ export default function HttpErrors({
         className="metric metric--xl"
         style={{ color: bad ? "var(--bad)" : "var(--text)" }}
       >
-        {q.isLoading ? "…" : (v ?? "—")}
+        {q.isLoading ? (
+          <Skeleton variant="block" width={120} height={40} />
+        ) : (
+          (v ?? "—")
+        )}
       </div>
     </WidgetFrame>
   );

@@ -1,5 +1,6 @@
 import WidgetFrame from "../grid/WidgetFrame";
 import { useMetric } from "../api/hooks";
+import Skeleton from "../grid/Skeleton";
 
 export default function HttpLatency({
   app,
@@ -21,7 +22,11 @@ export default function HttpLatency({
       error={(q.data as any)?.error || (q.error as any)?.message}
     >
       <div className="metric metric--xl">
-        {q.isLoading ? "…" : (v ?? "—")}
+        {q.isLoading ? (
+          <Skeleton variant="block" width={100} height={40} />
+        ) : (
+          (v ?? "—")
+        )}
         <span
           style={{
             fontSize: 16,

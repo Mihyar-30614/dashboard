@@ -1,5 +1,6 @@
 import WidgetFrame from "../grid/WidgetFrame";
 import { useMetric } from "../api/hooks";
+import Skeleton from "../grid/Skeleton";
 
 export default function UsersTotal({
   app,
@@ -19,7 +20,11 @@ export default function UsersTotal({
       error={(q.data as any)?.error || (q.error as any)?.message}
     >
       <div className="metric metric--xl">
-        {q.isLoading ? "…" : ((q.data as any)?.data ?? "—")}
+        {q.isLoading ? (
+          <Skeleton variant="block" width={120} height={40} />
+        ) : (
+          ((q.data as any)?.data ?? "—")
+        )}
       </div>
       <div
         className="eyebrow"

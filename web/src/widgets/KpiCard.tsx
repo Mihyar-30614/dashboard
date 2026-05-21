@@ -1,5 +1,6 @@
 import WidgetFrame from "../grid/WidgetFrame";
 import { useMetric, useApps } from "../api/hooks";
+import Skeleton from "../grid/Skeleton";
 
 export default function KpiCard({
   app,
@@ -28,7 +29,11 @@ export default function KpiCard({
       error={(q.data as any)?.error || (q.error as any)?.message}
     >
       <div className="metric metric--lg">
-        {q.isLoading ? "…" : ((q.data as any)?.data ?? "—")}
+        {q.isLoading ? (
+          <Skeleton variant="block" width={96} height={28} />
+        ) : (
+          ((q.data as any)?.data ?? "—")
+        )}
       </div>
     </WidgetFrame>
   );
