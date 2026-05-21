@@ -44,6 +44,17 @@ export type QueryResult = {
   query_id?: number | null;
 };
 
+export type DiscoverQuestion = {
+  question: string;
+  category?: string | null;
+  source?: string | null;
+  quality_score?: number | null;
+  priority?: number | null;
+  frequency?: number | null;
+  last_used?: string | null;
+  avg_response_time_ms?: number | null;
+};
+
 export type ConversationTurn = {
   role?: string;
   question?: string;
@@ -85,10 +96,11 @@ export const llm = {
     ),
 
   discover: (db_name: string, limit = 8) =>
-    req<{ category: string | null; questions: string[]; count: number }>(
-      "GET",
-      `${db(db_name)}/discover?limit=${limit}`,
-    ),
+    req<{
+      category: string | null;
+      questions: DiscoverQuestion[];
+      count: number;
+    }>("GET", `${db(db_name)}/discover?limit=${limit}`),
 
   feedback: (
     db_name: string,

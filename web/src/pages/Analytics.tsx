@@ -75,7 +75,17 @@ export default function Analytics() {
         llm.getConversation(target).catch(() => null),
         llm.discover(target, 8).catch(() => null),
       ]);
-      setDiscover(disc?.questions ?? []);
+      setDiscover(
+        (disc?.questions ?? [])
+          .map((it) =>
+            typeof it === "string"
+              ? it
+              : typeof (it as { question?: unknown })?.question === "string"
+                ? ((it as { question: string }).question)
+                : "",
+          )
+          .filter(Boolean),
+      );
       const next: Msg[] = [];
       for (const turn of conv?.history ?? []) {
         if (turn.question)
