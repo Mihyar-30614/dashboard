@@ -1,7 +1,7 @@
-import { Outlet } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { Outlet, useLocation, useParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
 import Sidebar from "./Sidebar";
-import { useMe } from "../api/hooks";
+import { useApps, useMe } from "../api/hooks";
 
 function useNow() {
   const [now, setNow] = useState(new Date());
@@ -12,9 +12,30 @@ function useNow() {
   return now;
 }
 
+function useSectionLabel() {
+  const loc = useLocation();
+  const params = useParams();
+  const apps = useApps();
+  return useMemo(() => {
+    const p = loc.pathname;
+    if (p === "/" || p === "") return "Overview";
+    if (p.startsWith("/analytics")) return "Analytics";
+    if (p.startsWith("/settings")) return "Settings";
+    if (p.startsWith("/app/")) {
+      const slug = p.split("/")[2] || params.slug;
+      const meta = (apps.data as any[] | undefined)?.find(
+        (a) => a.slug === slug,
+      );
+      return meta?.label || slug || "Property";
+    }
+    return "";
+  }, [loc.pathname, params.slug, apps.data]);
+}
+
 export default function Shell() {
   const me = useMe();
   const now = useNow();
+  const section = useSectionLabel();
   const stamp =
     now.toISOString().slice(11, 19) + " UTC · " + now.toISOString().slice(0, 10);
 
@@ -57,6 +78,33 @@ export default function Shell() {
               live
             </span>
             <span style={{ color: "var(--ink-soft)" }}>{stamp}</span>
+            {section && (
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  paddingLeft: 18,
+                  borderLeft: "1px solid var(--rule)",
+                  color: "var(--muted)",
+                }}
+              >
+                <span style={{ color: "var(--muted)" }}>section</span>
+                <span
+                  style={{
+                    fontFamily: "var(--font-display)",
+                    fontStyle: "italic",
+                    fontWeight: 500,
+                    fontSize: 14,
+                    letterSpacing: "-0.01em",
+                    textTransform: "none",
+                    color: "var(--text)",
+                  }}
+                >
+                  {section}
+                </span>
+              </span>
+            )}
           </div>
 
           <span

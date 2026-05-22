@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Menu } from "lucide-react";
 import { llm, type QueryResult, type SavedQuery } from "../api/llm";
 import { useToast } from "../ui/Toast";
 import "../analytics/analytics.css";
@@ -284,7 +285,7 @@ export default function Analytics() {
           onClick={() => setRailOpen((v) => !v)}
           aria-label="Toggle rail"
         >
-          ☰
+          <Menu size={16} strokeWidth={1.8} />
         </button>
         <div>
           <span className="eyebrow">analytics · ask your db</span>

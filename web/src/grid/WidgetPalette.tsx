@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import { WIDGETS } from "../widgets/registry";
 
 export default function WidgetPalette({
@@ -55,8 +56,21 @@ export default function WidgetPalette({
             <div className="eyebrow">palette · {scope}</div>
             <h3 style={{ marginTop: 4, marginBottom: 0 }}>Add widget</h3>
           </div>
-          <button type="button" onClick={onClose}>
-            ✕
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close palette"
+            title="Close"
+            style={{
+              width: 30,
+              height: 30,
+              padding: 0,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <X size={14} strokeWidth={1.8} />
           </button>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

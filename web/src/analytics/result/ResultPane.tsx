@@ -1,3 +1,4 @@
+import { ThumbsDown, ThumbsUp } from "lucide-react";
 import type { QA, ResultTab } from "../types";
 import type { SavedQueryRequest } from "../../api/llm";
 import TableView from "./TableView";
@@ -135,38 +136,29 @@ export default function ResultPane({
       <RelatedChips related={qa.related} onPick={onRelated} />
 
       {qa.query_id != null && (
-        <div style={{ display: "flex", gap: 6 }}>
+        <div className="an-result__feedback">
+          <span className="an-result__feedback-label">helpful?</span>
           <button
             type="button"
             onClick={() => onFeedback(true)}
-            style={{
-              padding: "4px 8px",
-              background:
-                qa.feedback === "up"
-                  ? "color-mix(in srgb, var(--accent) 14%, transparent)"
-                  : "transparent",
-              border: "1px solid var(--rule)",
-              borderRadius: 4,
-              cursor: "pointer",
-            }}
+            className={
+              "an-result__fb" + (qa.feedback === "up" ? " is-active" : "")
+            }
+            title="Mark as correct"
+            aria-label="Mark as correct"
           >
-            👍
+            <ThumbsUp size={13} strokeWidth={1.8} />
           </button>
           <button
             type="button"
             onClick={() => onFeedback(false)}
-            style={{
-              padding: "4px 8px",
-              background:
-                qa.feedback === "down"
-                  ? "color-mix(in srgb, var(--accent) 14%, transparent)"
-                  : "transparent",
-              border: "1px solid var(--rule)",
-              borderRadius: 4,
-              cursor: "pointer",
-            }}
+            className={
+              "an-result__fb" + (qa.feedback === "down" ? " is-active" : "")
+            }
+            title="Mark as wrong"
+            aria-label="Mark as wrong"
           >
-            👎
+            <ThumbsDown size={13} strokeWidth={1.8} />
           </button>
         </div>
       )}

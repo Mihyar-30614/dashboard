@@ -1,4 +1,5 @@
 import React from "react";
+import { X } from "lucide-react";
 
 type Props = {
   title: string;
@@ -78,10 +79,18 @@ export default function WidgetFrame({
               type="button"
               onMouseDown={(e) => e.stopPropagation()}
               onClick={onRemove}
-              style={{ padding: "2px 8px", fontSize: 11 }}
-              title="Remove"
+              title="Remove widget"
+              aria-label="Remove widget"
+              style={{
+                width: 22,
+                height: 22,
+                padding: 0,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
             >
-              ×
+              <X size={12} strokeWidth={1.8} />
             </button>
           )}
         </div>
