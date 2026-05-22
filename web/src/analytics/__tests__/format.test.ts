@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatCell, toCsv } from "../format";
+import { formatCell, isDateValue, isNumericValue, toCsv } from "../format";
 
 describe("formatCell", () => {
   it("renders em-dash for null", () => {
@@ -18,6 +18,47 @@ describe("formatCell", () => {
     expect(formatCell(42)).toBe("42");
     expect(formatCell("x")).toBe("x");
     expect(formatCell(true)).toBe("true");
+  });
+});
+
+describe("isNumericValue", () => {
+  it("accepts finite numbers", () => {
+    expect(isNumericValue(0)).toBe(true);
+    expect(isNumericValue(-3.14)).toBe(true);
+  });
+  it("rejects NaN and Infinity", () => {
+    expect(isNumericValue(NaN)).toBe(false);
+    expect(isNumericValue(Infinity)).toBe(false);
+  });
+  it("accepts numeric strings (DB driver edge case)", () => {
+    expect(isNumericValue("42")).toBe(true);
+    expect(isNumericValue("-3.14")).toBe(true);
+    expect(isNumericValue("0")).toBe(true);
+  });
+  it("rejects non-numeric strings", () => {
+    expect(isNumericValue("hi")).toBe(false);
+    expect(isNumericValue("1.2.3")).toBe(false);
+    expect(isNumericValue("")).toBe(false);
+  });
+  it("rejects null/undefined/objects", () => {
+    expect(isNumericValue(null)).toBe(false);
+    expect(isNumericValue(undefined)).toBe(false);
+    expect(isNumericValue({})).toBe(false);
+  });
+});
+
+describe("isDateValue", () => {
+  it("accepts Date instances", () => {
+    expect(isDateValue(new Date())).toBe(true);
+  });
+  it("accepts ISO-like date strings", () => {
+    expect(isDateValue("2026-05-21")).toBe(true);
+    expect(isDateValue("2026-05-21T10:30")).toBe(true);
+  });
+  it("rejects other formats", () => {
+    expect(isDateValue("May 21 2026")).toBe(false);
+    expect(isDateValue("2026/05/21")).toBe(false);
+    expect(isDateValue(20260521)).toBe(false);
   });
 });
 

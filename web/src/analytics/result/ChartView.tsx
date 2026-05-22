@@ -10,47 +10,84 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { isDateValue, isNumericValue } from "../format";
 
 type Row = Record<string, unknown>;
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}/;
+type PickResult =
+  | { ok: true; kind: "bar" | "line"; xKey: string; yKey: string }
+  | { ok: false; reason: string };
 
-function isNumeric(v: unknown): v is number {
-  return typeof v === "number" && Number.isFinite(v);
-}
-
-function isDateLike(v: unknown): boolean {
-  if (v instanceof Date) return true;
-  return typeof v === "string" && DATE_RE.test(v);
-}
-
-type Pick =
-  | { kind: "bar"; xKey: string; yKey: string }
-  | { kind: "line"; xKey: string; yKey: string }
-  | null;
-
-function choosePick(rows: Row[]): Pick {
-  if (rows.length === 0) return null;
-  const cols = Object.keys(rows[0] ?? {});
-  if (cols.length < 2) return null;
-
-  const numericCols = cols.filter((c) =>
-    rows.every((r) => r[c] === null || r[c] === undefined || isNumeric(r[c])),
-  );
-  const dateCols = cols.filter((c) =>
-    rows.every(
-      (r) => r[c] === null || r[c] === undefined || isDateLike(r[c]),
-    ),
-  );
-
-  if (dateCols.length > 0 && numericCols.length > 0) {
-    return { kind: "line", xKey: dateCols[0], yKey: numericCols[0] };
+function colIsNumeric(rows: Row[], col: string): boolean {
+  let seen = 0;
+  for (const r of rows) {
+    const v = r[col];
+    if (v === null || v === undefined) continue;
+    if (!isNumericValue(v)) return false;
+    seen++;
   }
-  if (cols.length === 2 && numericCols.length === 1) {
+  return seen > 0;
+}
+
+function colIsDate(rows: Row[], col: string): boolean {
+  let seen = 0;
+  for (const r of rows) {
+    const v = r[col];
+    if (v === null || v === undefined) continue;
+    if (!isDateValue(v)) return false;
+    seen++;
+  }
+  return seen > 0;
+}
+
+function choosePick(rows: Row[]): PickResult {
+  if (rows.length === 0) return { ok: false, reason: "no rows to chart" };
+
+  const cols = Array.from(
+    rows.reduce<Set<string>>((s, r) => {
+      for (const k of Object.keys(r)) s.add(k);
+      return s;
+    }, new Set()),
+  );
+
+  if (cols.length < 2) {
+    return { ok: false, reason: "single-column result — no axis pair" };
+  }
+
+  const numericCols = cols.filter((c) => colIsNumeric(rows, c));
+  const dateCols = cols.filter((c) => colIsDate(rows, c));
+
+  if (numericCols.length === 0) {
+    return { ok: false, reason: "no numeric column to plot" };
+  }
+
+  if (dateCols.length > 0) {
+    return { ok: true, kind: "line", xKey: dateCols[0], yKey: numericCols[0] };
+  }
+
+  if (cols.length === 2) {
     const xKey = cols.find((c) => c !== numericCols[0])!;
-    return { kind: "bar", xKey, yKey: numericCols[0] };
+    if (numericCols.length === 1) {
+      return { ok: true, kind: "bar", xKey, yKey: numericCols[0] };
+    }
+    return {
+      ok: false,
+      reason: "both columns numeric — no categorical axis",
+    };
   }
-  return null;
+
+  return {
+    ok: false,
+    reason: `${cols.length} columns and no time axis — can't pick x/y unambiguously`,
+  };
+}
+
+function coerce(rows: Row[], xKey: string, yKey: string): Row[] {
+  return rows.map((r) => {
+    const yv = r[yKey];
+    const y = typeof yv === "string" && isNumericValue(yv) ? Number(yv) : yv;
+    return { ...r, [yKey]: y, [xKey]: r[xKey] };
+  });
 }
 
 export default function ChartView({
@@ -62,10 +99,25 @@ export default function ChartView({
 }) {
   const pick = useMemo(() => choosePick(rows), [rows]);
 
-  if (rows.length === 0) {
-    return <div className="an-result__placeholder">(no rows)</div>;
+  if (!pick.ok) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            color: "var(--muted)",
+            padding: "6px 10px",
+            border: "1px dashed var(--rule)",
+            borderRadius: 6,
+          }}
+        >
+          chart unavailable · {pick.reason}
+        </div>
+        {fallback}
+      </div>
+    );
   }
-  if (!pick) return <>{fallback}</>;
 
   const accent = getComputedStyle(document.documentElement)
     .getPropertyValue("--chart-1")
@@ -84,10 +136,16 @@ export default function ChartView({
     fontSize: 12,
   };
 
+  const data = coerce(
+    pick.kind === "bar" ? rows.slice(0, 200) : rows.slice(0, 500),
+    pick.xKey,
+    pick.yKey,
+  );
+
   return (
     <ResponsiveContainer width="100%" height={300}>
       {pick.kind === "bar" ? (
-        <BarChart data={rows.slice(0, 200)}>
+        <BarChart data={data}>
           <CartesianGrid stroke={rule} strokeDasharray="3 3" />
           <XAxis dataKey={pick.xKey} stroke={rule} />
           <YAxis stroke={rule} />
@@ -95,7 +153,7 @@ export default function ChartView({
           <Bar dataKey={pick.yKey} fill={accent} />
         </BarChart>
       ) : (
-        <LineChart data={rows.slice(0, 500)}>
+        <LineChart data={data}>
           <CartesianGrid stroke={rule} strokeDasharray="3 3" />
           <XAxis dataKey={pick.xKey} stroke={rule} />
           <YAxis stroke={rule} />

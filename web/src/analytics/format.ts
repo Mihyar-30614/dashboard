@@ -1,3 +1,19 @@
+const NUMERIC_STR_RE = /^-?\d+(\.\d+)?$/;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}|$)/;
+
+export function isNumericValue(v: unknown): boolean {
+  if (typeof v === "number") return Number.isFinite(v);
+  if (typeof v === "string" && NUMERIC_STR_RE.test(v)) {
+    return Number.isFinite(Number(v));
+  }
+  return false;
+}
+
+export function isDateValue(v: unknown): boolean {
+  if (v instanceof Date) return true;
+  return typeof v === "string" && DATE_RE.test(v);
+}
+
 export function formatCell(v: unknown): string {
   if (v === null || v === undefined) return "—";
   if (typeof v === "object") return JSON.stringify(v);

@@ -1,19 +1,15 @@
 import type { ResultTab } from "../types";
+import { isDateValue, isNumericValue } from "../format";
 
 type Row = Record<string, unknown>;
-
-const DATE_RE = /^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}|$)/;
 
 function isNumericCol(rows: Row[], col: string): boolean {
   let seen = 0;
   for (const r of rows) {
     const v = r[col];
     if (v === null || v === undefined) continue;
-    if (typeof v === "number" && Number.isFinite(v)) {
-      seen++;
-      continue;
-    }
-    return false;
+    if (!isNumericValue(v)) return false;
+    seen++;
   }
   return seen > 0;
 }
@@ -23,15 +19,8 @@ function isDateCol(rows: Row[], col: string): boolean {
   for (const r of rows) {
     const v = r[col];
     if (v === null || v === undefined) continue;
-    if (v instanceof Date) {
-      seen++;
-      continue;
-    }
-    if (typeof v === "string" && DATE_RE.test(v)) {
-      seen++;
-      continue;
-    }
-    return false;
+    if (!isDateValue(v)) return false;
+    seen++;
   }
   return seen > 0;
 }
@@ -41,6 +30,8 @@ function isCategoricalCol(rows: Row[], col: string): boolean {
     const v = r[col];
     if (v === null || v === undefined) continue;
     if (typeof v !== "string") return false;
+    if (isDateValue(v)) return false;
+    if (isNumericValue(v)) return false;
   }
   return true;
 }
