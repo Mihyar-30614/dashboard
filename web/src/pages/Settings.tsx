@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check, Copy, MailPlus, Trash2 } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../ui/Toast";
+import { useMe } from "../api/hooks";
 
 type Invite = {
   id: number;
@@ -22,6 +24,7 @@ function fmtExpiry(iso: string): { label: string; tone: "ok" | "warn" | "bad" } 
 
 export default function Settings() {
   const toast = useToast();
+  const { data: user } = useMe();
   const qc = useQueryClient();
   const invites = useQuery({
     queryKey: ["invites"],
@@ -207,6 +210,15 @@ export default function Settings() {
           </div>
         )}
       </section>
+
+      {user?.is_admin && (
+        <section className="panel">
+          <span className="eyebrow">admin tools</span>
+          <div style={{ marginTop: 8 }}>
+            <Link to="/settings/sql-widgets">Custom SQL widgets</Link>
+          </div>
+        </section>
+      )}
 
       <section className="panel">
         <div style={{ marginBottom: 14 }}>
