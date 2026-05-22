@@ -1,0 +1,35 @@
+{
+  "sportly": {
+    "kind": "app",
+    "scope": "app",
+    "app_slug": "sportly",
+    "db_ro": {
+      "host": "localhost",
+      "port": 5432,
+      "database": "sportly",
+      "user": "sportly_ro"
+    }
+  },
+  "honeydoeh": {
+    "kind": "app",
+    "scope": "app",
+    "app_slug": "honeydoeh",
+    "db_ro": {
+      "host": "localhost",
+      "port": 5432,
+      "database": "honeydoeh",
+      "user": "honeydoeh_ro"
+    }
+  },
+  "debtmanager": {
+    "kind": "app",
+    "scope": "app",
+    "app_slug": "debtmanager",
+    "db_ro": {
+      "host": "localhost",
+      "port": 5432,
+      "database": "debtapp",
+      "user": "debtmanager_ro"
+    }
+  }
+}

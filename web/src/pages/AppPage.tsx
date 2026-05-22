@@ -4,7 +4,8 @@ import GridCanvas, { type GridWidget } from "../grid/GridCanvas";
 import WidgetFrame from "../grid/WidgetFrame";
 import { useLayout, useSaveLayout, useApps } from "../api/hooks";
 import { WIDGETS } from "../widgets/registry";
-import WidgetPalette from "../grid/WidgetPalette";
+import WidgetPalette, { type DynamicPaletteItem } from "../grid/WidgetPalette";
+import { useSqlWidgets, useSqlDataSources } from "../api/sqlWidgets";
 import SaveBadge, { type SaveState } from "../grid/SaveBadge";
 import EmptyLayout from "../grid/EmptyLayout";
 import { setPageDirty } from "../grid/savingRegistry";
@@ -16,6 +17,8 @@ export default function AppPage() {
   const layoutQ = useLayout(slug);
   const apps = useApps();
   const save = useSaveLayout(slug);
+  const sqlList = useSqlWidgets();
+  const sqlSources = useSqlDataSources();
   const toast = useToast();
   const [local, setLocal] = useState<GridWidget[]>([]);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -91,6 +94,35 @@ export default function AppPage() {
     setLocal(next);
     scheduleSave(next);
   }
+
+  function addSql(widget: { id: number }) {
+    const nextY = local.reduce((m, w) => Math.max(m, w.y + w.h), 0);
+    const next = [
+      ...local,
+      {
+        id: "w_" + Math.random().toString(36).slice(2, 8),
+        kind: "sql",
+        app: slug,
+        x: 0, y: nextY, w: 3, h: 2,
+        params: { widget_id: widget.id, range: "30d" },
+      },
+    ];
+    setLocal(next);
+    scheduleSave(next);
+  }
+
+  const dynamicPalette: DynamicPaletteItem[] = (sqlList.data ?? []).map(w => {
+    const src = (sqlSources.data ?? []).find(s => s.name === w.data_source);
+    return {
+      key: `sql:${w.id}`,
+      label: w.name,
+      description: w.description ?? "",
+      defaultSize: { w: 3, h: 2 },
+      scope: (src?.scope ?? "app") as "app" | "overview",
+      appSlug: src?.app_slug,
+      onPick: () => addSql(w),
+    };
+  });
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -177,6 +209,8 @@ export default function AppPage() {
       <WidgetPalette
         open={paletteOpen}
         scope="app"
+        appSlug={slug}
+        dynamic={dynamicPalette}
         onPick={add}
         onClose={() => setPaletteOpen(false)}
       />

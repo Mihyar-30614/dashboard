@@ -1,4 +1,5 @@
 import type { FC } from "react";
+import SqlWidget from "./SqlWidget";
 import UsersTotal from "./UsersTotal";
 import DauCard from "./DauCard";
 import HealthCard from "./HealthCard";
@@ -128,5 +129,12 @@ export const WIDGETS: Record<string, WidgetDef> = {
     defaultSize: { w: 6, h: 2 },
     scope: "app" as const,
     Component: KpiMultiStat,
+  },
+  sql: {
+    label: "Custom SQL",
+    description: "Render saved custom SQL queries as number, line, bar, or table.",
+    defaultSize: { w: 3, h: 2 },
+    scope: "both" as const,
+    Component: SqlWidget,
   },
 } as const;

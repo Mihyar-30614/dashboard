@@ -5,6 +5,7 @@ import Shell from "./layout/Shell";
 import AppPage from "./pages/AppPage";
 import Overview from "./pages/Overview";
 import Settings from "./pages/Settings";
+import SqlWidgets from "./pages/SqlWidgets";
 import Analytics from "./pages/Analytics";
 import AcceptInvite from "./pages/AcceptInvite";
 import { useMe } from "./api/hooks";
@@ -39,6 +40,7 @@ export default function App() {
         <Route path="app/:slug" element={<AppPage />} />
         <Route path="analytics" element={<Analytics />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="settings/sql-widgets" element={<SqlWidgets />} />
       </Route>
     </Routes>
   );

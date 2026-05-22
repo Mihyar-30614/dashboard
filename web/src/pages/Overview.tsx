@@ -3,7 +3,8 @@ import GridCanvas, { type GridWidget } from "../grid/GridCanvas";
 import WidgetFrame from "../grid/WidgetFrame";
 import { useLayout, useSaveLayout, useApps } from "../api/hooks";
 import { WIDGETS } from "../widgets/registry";
-import WidgetPalette from "../grid/WidgetPalette";
+import WidgetPalette, { type DynamicPaletteItem } from "../grid/WidgetPalette";
+import { useSqlWidgets, useSqlDataSources } from "../api/sqlWidgets";
 import SaveBadge, { type SaveState } from "../grid/SaveBadge";
 import EmptyLayout from "../grid/EmptyLayout";
 import { setPageDirty } from "../grid/savingRegistry";
@@ -14,6 +15,8 @@ export default function Overview() {
   const layoutQ = useLayout("overview");
   const apps = useApps();
   const save = useSaveLayout("overview");
+  const sqlList = useSqlWidgets();
+  const sqlSources = useSqlDataSources();
   const toast = useToast();
   const [local, setLocal] = useState<GridWidget[]>([]);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -88,6 +91,35 @@ export default function Overview() {
     setLocal(next);
     scheduleSave(next);
   }
+
+  function addSql(widget: { id: number }) {
+    const nextY = local.reduce((m, w) => Math.max(m, w.y + w.h), 0);
+    const next = [
+      ...local,
+      {
+        id: "w_" + Math.random().toString(36).slice(2, 8),
+        kind: "sql",
+        x: 0, y: nextY, w: 3, h: 2,
+        params: { widget_id: widget.id, range: "30d" },
+      },
+    ];
+    setLocal(next);
+    scheduleSave(next);
+  }
+
+  const dynamicPalette: DynamicPaletteItem[] = (sqlList.data ?? [])
+    .filter(w => {
+      const src = (sqlSources.data ?? []).find(s => s.name === w.data_source);
+      return src?.scope === "overview";
+    })
+    .map(w => ({
+      key: `sql:${w.id}`,
+      label: w.name,
+      description: w.description ?? "",
+      defaultSize: { w: 3, h: 2 },
+      scope: "overview" as const,
+      onPick: () => addSql(w),
+    }));
 
   const list = (apps.data as any[]) || [];
   const onlineCount = list.filter((a) => a.pm2_status === "online").length;
@@ -183,6 +215,7 @@ export default function Overview() {
       <WidgetPalette
         open={paletteOpen}
         scope="overview"
+        dynamic={dynamicPalette}
         onPick={add}
         onClose={() => setPaletteOpen(false)}
       />
