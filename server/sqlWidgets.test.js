@@ -1,5 +1,22 @@
-import { describe, it, expect } from 'vitest';
-import { rewriteSql, RANGE_DAYS } from './sqlWidgets.js';
+import { describe, it, expect, vi } from 'vitest';
+import { rewriteSql, RANGE_DAYS, executeSqlWidget } from './sqlWidgets.js';
+
+function fakePool({ rows = [], fields = [], throwOn = null } = {}) {
+  const queries = [];
+  const client = {
+    query: vi.fn(async (text) => {
+      queries.push(text);
+      if (throwOn && text === throwOn) throw new Error('boom');
+      if (text === 'SET statement_timeout = 5000') return { rows: [] };
+      if (text === 'SET default_transaction_read_only = on') return { rows: [] };
+      if (text === 'BEGIN READ ONLY') return { rows: [] };
+      if (text === 'ROLLBACK') return { rows: [] };
+      return { rows, fields };
+    }),
+    release: vi.fn(),
+  };
+  return { connect: vi.fn(async () => client), _client: client, _queries: queries };
+}
 
 describe('rewriteSql', () => {
   it('substitutes :range_days with $1', () => {
@@ -40,5 +57,49 @@ describe('rewriteSql', () => {
 
   it('RANGE_DAYS maps known values', () => {
     expect(RANGE_DAYS).toEqual({ '7d': 7, '30d': 30, '90d': 90 });
+  });
+});
+
+describe('executeSqlWidget', () => {
+  it('sets timeout, opens read-only txn, runs sql, rolls back', async () => {
+    const pool = fakePool({
+      rows: [{ value: 7 }],
+      fields: [{ name: 'value' }],
+    });
+    const out = await executeSqlWidget(pool, 'SELECT :range_days', '7d');
+    expect(pool._queries).toEqual([
+      'SET statement_timeout = 5000',
+      'SET default_transaction_read_only = on',
+      'BEGIN READ ONLY',
+      'SELECT $1',
+      'ROLLBACK',
+    ]);
+    expect(out.columns).toEqual(['value']);
+    expect(out.rows).toEqual([{ value: 7 }]);
+    expect(out.truncated).toBe(false);
+    expect(pool._client.release).toHaveBeenCalled();
+  });
+
+  it('caps rows at MAX_ROWS and sets truncated', async () => {
+    const rows = Array.from({ length: 1500 }, (_, i) => ({ n: i }));
+    const pool = fakePool({ rows, fields: [{ name: 'n' }] });
+    const out = await executeSqlWidget(pool, 'SELECT n FROM t', '7d');
+    expect(out.rows).toHaveLength(1000);
+    expect(out.truncated).toBe(true);
+  });
+
+  it('rolls back and releases on query error', async () => {
+    const pool = fakePool({ throwOn: 'SELECT $1', rows: [], fields: [] });
+    await expect(executeSqlWidget(pool, 'SELECT :range_days', '7d'))
+      .rejects.toThrow();
+    expect(pool._queries).toContain('ROLLBACK');
+    expect(pool._client.release).toHaveBeenCalled();
+  });
+
+  it('returns durationMs as a number', async () => {
+    const pool = fakePool({ rows: [], fields: [] });
+    const out = await executeSqlWidget(pool, 'SELECT 1', '7d');
+    expect(typeof out.durationMs).toBe('number');
+    expect(out.durationMs).toBeGreaterThanOrEqual(0);
   });
 });

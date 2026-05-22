@@ -21,3 +21,32 @@ export function rewriteSql(sql, range) {
   const text = sql.replace(/:range_days\b/g, '$1');
   return { text, days };
 }
+
+export async function executeSqlWidget(pool, sql, range) {
+  const { text, days } = rewriteSql(sql, range);
+  const start = Date.now();
+  const client = await pool.connect();
+  try {
+    await client.query(`SET statement_timeout = ${STATEMENT_TIMEOUT_MS}`);
+    await client.query('SET default_transaction_read_only = on');
+    await client.query('BEGIN READ ONLY');
+    let result;
+    try {
+      result = await client.query(text, [days]);
+      await client.query('ROLLBACK');
+    } catch (err) {
+      try { await client.query('ROLLBACK'); } catch { /* ignore */ }
+      throw err;
+    }
+    const truncated = result.rows.length > MAX_ROWS;
+    const rows = truncated ? result.rows.slice(0, MAX_ROWS) : result.rows;
+    return {
+      columns: result.fields.map(f => f.name),
+      rows,
+      truncated,
+      durationMs: Date.now() - start,
+    };
+  } finally {
+    client.release();
+  }
+}
