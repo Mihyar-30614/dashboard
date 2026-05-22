@@ -99,6 +99,8 @@ export default function Overview() {
         <div>
           <span className="eyebrow">overview · all properties</span>
           <h1 style={{ marginTop: 6 }}>
+            Every property,
+            <br />
             <em
               style={{
                 fontStyle: "italic",
@@ -106,11 +108,9 @@ export default function Overview() {
                 fontWeight: 500,
               }}
             >
-              Three
+              one
             </em>{" "}
-            applications,
-            <br />
-            one pane of glass.
+            pane of glass.
           </h1>
         </div>
         <div
