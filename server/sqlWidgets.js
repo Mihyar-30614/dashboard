@@ -22,6 +22,28 @@ export function rewriteSql(sql, range) {
   return { text, days };
 }
 
+export function inferViz({ columns, rows }) {
+  if (columns.length === 0 || rows.length === 0) return 'table';
+  const sample = rows[0];
+
+  if (rows.length === 1 && columns.length === 1) {
+    const v = sample[columns[0]];
+    if (typeof v === 'number' || (typeof v === 'string' && !isNaN(Number(v)))) {
+      return 'number';
+    }
+  }
+
+  if (columns[0] === 't' && columns.length >= 2) {
+    return 'line';
+  }
+
+  if (columns.length === 2 && typeof sample[columns[1]] === 'number') {
+    return 'bar';
+  }
+
+  return 'table';
+}
+
 export async function executeSqlWidget(pool, sql, range) {
   const { text, days } = rewriteSql(sql, range);
   const start = Date.now();

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { rewriteSql, RANGE_DAYS, executeSqlWidget } from './sqlWidgets.js';
+import { rewriteSql, RANGE_DAYS, executeSqlWidget, inferViz } from './sqlWidgets.js';
 
 function fakePool({ rows = [], fields = [], throwOn = null } = {}) {
   const queries = [];
@@ -101,5 +101,32 @@ describe('executeSqlWidget', () => {
     const out = await executeSqlWidget(pool, 'SELECT 1', '7d');
     expect(typeof out.durationMs).toBe('number');
     expect(out.durationMs).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('inferViz', () => {
+  it('returns number for 1 row × 1 numeric column', () => {
+    expect(inferViz({ columns: ['v'], rows: [{ v: 42 }] })).toBe('number');
+  });
+  it('returns line for t + numeric columns', () => {
+    expect(inferViz({
+      columns: ['t', 'value'],
+      rows: [{ t: '2026-05-01', value: 1 }, { t: '2026-05-02', value: 2 }]
+    })).toBe('line');
+  });
+  it('returns bar for text + numeric', () => {
+    expect(inferViz({
+      columns: ['label', 'count'],
+      rows: [{ label: 'a', count: 1 }, { label: 'b', count: 2 }]
+    })).toBe('bar');
+  });
+  it('returns table otherwise', () => {
+    expect(inferViz({
+      columns: ['a', 'b', 'c'],
+      rows: [{ a: 1, b: 2, c: 3 }, { a: 4, b: 5, c: 6 }]
+    })).toBe('table');
+  });
+  it('returns table for empty result', () => {
+    expect(inferViz({ columns: [], rows: [] })).toBe('table');
   });
 });
