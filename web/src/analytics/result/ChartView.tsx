@@ -40,6 +40,19 @@ function colIsDate(rows: Row[], col: string): boolean {
   return seen > 0;
 }
 
+function colIsCategorical(rows: Row[], col: string): boolean {
+  let seen = 0;
+  for (const r of rows) {
+    const v = r[col];
+    if (v === null || v === undefined) continue;
+    if (typeof v !== "string") return false;
+    if (isDateValue(v)) return false;
+    if (isNumericValue(v)) return false;
+    seen++;
+  }
+  return seen > 0;
+}
+
 function choosePick(rows: Row[]): PickResult {
   if (rows.length === 0) return { ok: false, reason: "no rows to chart" };
 
@@ -56,29 +69,30 @@ function choosePick(rows: Row[]): PickResult {
 
   const numericCols = cols.filter((c) => colIsNumeric(rows, c));
   const dateCols = cols.filter((c) => colIsDate(rows, c));
+  const categoricalCols = cols.filter((c) => colIsCategorical(rows, c));
 
   if (numericCols.length === 0) {
     return { ok: false, reason: "no numeric column to plot" };
   }
 
   if (dateCols.length > 0) {
-    return { ok: true, kind: "line", xKey: dateCols[0], yKey: numericCols[0] };
+    const yKey = numericCols.find((c) => !dateCols.includes(c)) ?? numericCols[0];
+    return { ok: true, kind: "line", xKey: dateCols[0], yKey };
   }
 
-  if (cols.length === 2) {
+  if (categoricalCols.length > 0) {
+    const yKey = numericCols.find((c) => !categoricalCols.includes(c)) ?? numericCols[0];
+    return { ok: true, kind: "bar", xKey: categoricalCols[0], yKey };
+  }
+
+  if (cols.length === 2 && numericCols.length === 1) {
     const xKey = cols.find((c) => c !== numericCols[0])!;
-    if (numericCols.length === 1) {
-      return { ok: true, kind: "bar", xKey, yKey: numericCols[0] };
-    }
-    return {
-      ok: false,
-      reason: "both columns numeric — no categorical axis",
-    };
+    return { ok: true, kind: "bar", xKey, yKey: numericCols[0] };
   }
 
   return {
     ok: false,
-    reason: `${cols.length} columns and no time axis — can't pick x/y unambiguously`,
+    reason: "no categorical or time column to use as an axis",
   };
 }
 

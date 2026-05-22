@@ -50,13 +50,13 @@ export function pickTab(rows: Row[]): ResultTab {
 
   const numericCols = cols.filter((c) => isNumericCol(rows, c));
   const dateCols = cols.filter((c) => isDateCol(rows, c));
+  const categoricalCols = cols.filter((c) => isCategoricalCol(rows, c));
 
-  if (numericCols.length >= 1 && dateCols.length >= 1) return "chart";
+  if (numericCols.length === 0) return "table";
 
-  if (cols.length === 2 && numericCols.length === 1 && rows.length <= 30) {
-    const otherCol = cols.find((c) => c !== numericCols[0])!;
-    if (isCategoricalCol(rows, otherCol)) return "chart";
-  }
+  if (dateCols.length > 0) return "chart";
+
+  if (categoricalCols.length > 0 && rows.length <= 30) return "chart";
 
   return "table";
 }

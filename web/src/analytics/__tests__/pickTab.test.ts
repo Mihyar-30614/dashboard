@@ -45,4 +45,19 @@ describe("pickTab", () => {
     ];
     expect(pickTab(rows)).toBe("table");
   });
+  it("returns chart for >2 cols when a numeric + categorical exists (top-3 case)", () => {
+    const rows = [
+      { id: 1, name: "Loan A", amount: 5000 },
+      { id: 2, name: "Loan B", amount: 3000 },
+      { id: 3, name: "Loan C", amount: 2000 },
+    ];
+    expect(pickTab(rows)).toBe("chart");
+  });
+  it("treats numeric strings as numeric (DB driver edge case)", () => {
+    const rows = [
+      { region: "EU", users: "100" },
+      { region: "US", users: "80" },
+    ];
+    expect(pickTab(rows)).toBe("chart");
+  });
 });
