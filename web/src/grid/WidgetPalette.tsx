@@ -88,20 +88,55 @@ export default function WidgetPalette({
                 background: "transparent",
                 color: "var(--text)",
                 borderColor: "var(--border)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 4,
               }}
             >
-              <div style={{ fontWeight: 600, fontSize: 14 }}>{def.label}</div>
               <div
                 style={{
-                  marginTop: 4,
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
-                  color: "var(--muted)",
+                  display: "flex",
+                  alignItems: "baseline",
+                  justifyContent: "space-between",
+                  gap: 10,
                 }}
               >
-                {kind} · {def.defaultSize.w}×{def.defaultSize.h}
+                <span style={{ fontWeight: 600, fontSize: 14 }}>{def.label}</span>
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    letterSpacing: "0.14em",
+                    color: "var(--muted)",
+                    flexShrink: 0,
+                  }}
+                >
+                  {def.defaultSize.w}×{def.defaultSize.h}
+                </span>
+              </div>
+              <div
+                style={{
+                  fontSize: 12,
+                  lineHeight: 1.45,
+                  color: "var(--muted)",
+                  fontWeight: 400,
+                  whiteSpace: "normal",
+                }}
+              >
+                {def.description}
+              </div>
+              <div
+                style={{
+                  marginTop: 2,
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 9,
+                  letterSpacing: "0.16em",
+                  textTransform: "uppercase",
+                  color: "var(--muted)",
+                  opacity: 0.7,
+                }}
+              >
+                {kind}
               </div>
             </button>
           ))}
