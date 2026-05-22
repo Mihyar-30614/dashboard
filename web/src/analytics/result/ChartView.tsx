@@ -75,14 +75,23 @@ function choosePick(rows: Row[]): PickResult {
     return { ok: false, reason: "no numeric column to plot" };
   }
 
+  function pickY(exclude: string[]): string {
+    const candidates = numericCols.filter((c) => !exclude.includes(c));
+    const measures = candidates.filter((c) => !isIdLike(c));
+    return measures[0] ?? candidates[0] ?? numericCols[0];
+  }
+
   if (dateCols.length > 0) {
-    const yKey = numericCols.find((c) => !dateCols.includes(c)) ?? numericCols[0];
-    return { ok: true, kind: "line", xKey: dateCols[0], yKey };
+    return { ok: true, kind: "line", xKey: dateCols[0], yKey: pickY(dateCols) };
   }
 
   if (categoricalCols.length > 0) {
-    const yKey = numericCols.find((c) => !categoricalCols.includes(c)) ?? numericCols[0];
-    return { ok: true, kind: "bar", xKey: categoricalCols[0], yKey };
+    return {
+      ok: true,
+      kind: "bar",
+      xKey: categoricalCols[0],
+      yKey: pickY(categoricalCols),
+    };
   }
 
   if (cols.length === 2 && numericCols.length === 1) {
@@ -94,6 +103,14 @@ function choosePick(rows: Row[]): PickResult {
     ok: false,
     reason: "no categorical or time column to use as an axis",
   };
+}
+
+function isIdLike(col: string): boolean {
+  const lc = col.toLowerCase();
+  if (lc === "id" || lc === "uuid" || lc === "pk") return true;
+  if (lc.endsWith("_id")) return true;
+  if (/[a-z]Id$/.test(col)) return true; // camelCase: userId, postId
+  return false;
 }
 
 function coerce(rows: Row[], xKey: string, yKey: string): Row[] {
@@ -133,22 +150,31 @@ export default function ChartView({
     );
   }
 
-  const accent = getComputedStyle(document.documentElement)
-    .getPropertyValue("--chart-1")
-    .trim() || "#0f6b66";
-  const rule = getComputedStyle(document.documentElement)
-    .getPropertyValue("--rule")
-    .trim() || "#d9d4c5";
-  const panel = getComputedStyle(document.documentElement)
-    .getPropertyValue("--panel")
-    .trim() || "#fffcf5";
+  const css = getComputedStyle(document.documentElement);
+  const v = (name: string, fallback: string) =>
+    css.getPropertyValue(name).trim() || fallback;
 
+  const accent = v("--chart-1", "#0f6b66");
+  const rule = v("--rule", "#d9d4c5");
+  const panel = v("--panel", "#fffcf5");
+  const text = v("--text", "#15171c");
+  const muted = v("--muted", "#6c6a62");
+  const gridStroke = `color-mix(in srgb, ${muted} 25%, transparent)`;
+
+  const axisTick = { fill: muted, fontFamily: "var(--font-mono)", fontSize: 11 };
   const tooltipStyle = {
     background: panel,
     border: `1px solid ${rule}`,
+    borderRadius: 6,
     fontFamily: "var(--font-mono)",
     fontSize: 12,
+    color: text,
+    padding: "8px 10px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
   };
+  const tooltipLabel = { color: muted, marginBottom: 4 };
+  const tooltipItem = { color: text };
+  const tooltipCursor = { fill: `color-mix(in srgb, ${accent} 10%, transparent)` };
 
   const data = coerce(
     pick.kind === "bar" ? rows.slice(0, 200) : rows.slice(0, 500),
@@ -159,25 +185,46 @@ export default function ChartView({
   return (
     <ResponsiveContainer width="100%" height={300}>
       {pick.kind === "bar" ? (
-        <BarChart data={data}>
-          <CartesianGrid stroke={rule} strokeDasharray="3 3" />
-          <XAxis dataKey={pick.xKey} stroke={rule} />
-          <YAxis stroke={rule} />
-          <Tooltip contentStyle={tooltipStyle} />
-          <Bar dataKey={pick.yKey} fill={accent} />
+        <BarChart data={data} margin={{ top: 10, right: 20, bottom: 10, left: 10 }}>
+          <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" vertical={false} />
+          <XAxis
+            dataKey={pick.xKey}
+            stroke={rule}
+            tick={axisTick}
+            tickLine={false}
+          />
+          <YAxis stroke={rule} tick={axisTick} tickLine={false} />
+          <Tooltip
+            contentStyle={tooltipStyle}
+            labelStyle={tooltipLabel}
+            itemStyle={tooltipItem}
+            cursor={tooltipCursor}
+          />
+          <Bar dataKey={pick.yKey} fill={accent} radius={[4, 4, 0, 0]} />
         </BarChart>
       ) : (
-        <LineChart data={data}>
-          <CartesianGrid stroke={rule} strokeDasharray="3 3" />
-          <XAxis dataKey={pick.xKey} stroke={rule} />
-          <YAxis stroke={rule} />
-          <Tooltip contentStyle={tooltipStyle} />
+        <LineChart data={data} margin={{ top: 10, right: 20, bottom: 10, left: 10 }}>
+          <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" vertical={false} />
+          <XAxis
+            dataKey={pick.xKey}
+            stroke={rule}
+            tick={axisTick}
+            tickLine={false}
+          />
+          <YAxis stroke={rule} tick={axisTick} tickLine={false} />
+          <Tooltip
+            contentStyle={tooltipStyle}
+            labelStyle={tooltipLabel}
+            itemStyle={tooltipItem}
+            cursor={{ stroke: accent, strokeWidth: 1 }}
+          />
           <Line
             type="monotone"
             dataKey={pick.yKey}
             stroke={accent}
             strokeWidth={2}
             dot={false}
+            activeDot={{ r: 4, fill: accent }}
           />
         </LineChart>
       )}
