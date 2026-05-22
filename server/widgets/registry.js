@@ -164,6 +164,16 @@ export const WIDGETS = [
     scope: "app",
     paramsSchema: [{ name: "keys", type: "string", required: true }],
   },
+  {
+    kind: "sql",
+    label: "Custom SQL",
+    defaultSize: { w: 3, h: 2 },
+    scope: "both",
+    paramsSchema: [
+      { name: "widget_id", type: "number", required: true },
+      { name: "range", type: "enum", values: ["7d", "30d", "90d"], default: "30d" },
+    ],
+  },
 ];
 
 export const KIND_INDEX = Object.fromEntries(WIDGETS.map((w) => [w.kind, w]));
