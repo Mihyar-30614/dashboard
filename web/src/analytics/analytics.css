@@ -38,15 +38,70 @@
 }
 
 .an__ctx {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--panel);
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--muted);
   cursor: pointer;
+  user-select: none;
+  transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
+}
+.an__ctx:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--rule));
+  color: var(--text);
+}
+.an__ctx:has(input:checked) {
+  border-color: var(--accent);
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+}
+
+/* === Themed checkbox (scoped to analytics page) === */
+.an input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  padding: 0;
+  background: var(--bg-elev);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  cursor: pointer;
+  position: relative;
+  display: inline-grid;
+  place-content: center;
+  flex: 0 0 auto;
+  transition: background 120ms ease, border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+.an input[type="checkbox"]:hover {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--rule));
+}
+.an input[type="checkbox"]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.an input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.an input[type="checkbox"]:checked::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  background: var(--panel);
+  clip-path: polygon(
+    14% 44%, 0% 60%, 40% 100%, 100% 20%, 86% 8%, 38% 70%
+  );
 }
 
 .an__hamburger {
