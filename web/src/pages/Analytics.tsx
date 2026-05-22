@@ -1,216 +1,291 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent,
-} from "react";
-import { llm, type QueryResult, type Row } from "../api/llm";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { llm, type QueryResult, type SavedQuery } from "../api/llm";
 import { useToast } from "../ui/Toast";
-
-type Msg =
-  | { id: string; role: "user"; text: string }
-  | {
-      id: string;
-      role: "assistant";
-      text: string;
-      sql?: string | null;
-      data?: Row[];
-      count?: number;
-      error?: string | null;
-      warnings?: string[] | null;
-      related?: string[] | null;
-      query_id?: number | null;
-      feedback?: "up" | "down";
-    }
-  | { id: string; role: "pending"; question: string };
+import "../analytics/analytics.css";
+import type { QA, ResultTab } from "../analytics/types";
+import { pickTab } from "../analytics/result/pickTab";
+import { useDbList } from "../analytics/hooks/useDbList";
+import { useConversation } from "../analytics/hooks/useConversation";
+import { useSavedQueries } from "../analytics/hooks/useSavedQueries";
+import { useSchema } from "../analytics/hooks/useSchema";
+import LeftRail from "../analytics/rail/LeftRail";
+import RailSection from "../analytics/rail/RailSection";
+import HistoryList from "../analytics/rail/HistoryList";
+import DiscoverList from "../analytics/rail/DiscoverList";
+import SavedList from "../analytics/rail/SavedList";
+import SchemaTree from "../analytics/rail/SchemaTree";
+import Composer from "../analytics/rail/Composer";
+import ResultPane from "../analytics/result/ResultPane";
 
 const DB_KEY = "analytics:db";
 const CTX_KEY = "analytics:use_context";
+const RAIL_KEY = "analytics:rail_open";
+const TAB_KEY = (id: number) => `analytics:active_tab:${id}`;
 
 function uid() {
-  return "m_" + Math.random().toString(36).slice(2, 9);
+  return "qa_" + Math.random().toString(36).slice(2, 9);
 }
 
 export default function Analytics() {
   const toast = useToast();
-  const [dbs, setDbs] = useState<string[]>([]);
+  const { dbs, loadErr: dbErr } = useDbList();
   const [db, setDb] = useState<string>(
     () => window.localStorage.getItem(DB_KEY) ?? "",
   );
   const [useCtx, setUseCtx] = useState<boolean>(
     () => window.localStorage.getItem(CTX_KEY) !== "0",
   );
-  const [messages, setMessages] = useState<Msg[]>([]);
+  const conv = useConversation(db);
+  const saved = useSavedQueries(db);
+  const [schemaEnabled, setSchemaEnabled] = useState(false);
+  const schemaQ = useSchema(db, schemaEnabled);
+
   const [input, setInput] = useState("");
   const [discover, setDiscover] = useState<string[]>([]);
-  const [loadErr, setLoadErr] = useState<string | null>(null);
-  const [sending, setSending] = useState(false);
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<ResultTab | null>(null);
+  const [railOpen, setRailOpen] = useState<boolean>(
+    () => window.localStorage.getItem(RAIL_KEY) === "1",
+  );
   const abortRef = useRef<AbortController | null>(null);
-  const listRef = useRef<HTMLDivElement | null>(null);
+  const composerRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
-    llm
-      .listDatabases()
-      .then((r) => {
-        setDbs(r.databases);
-        if (!db && r.databases.length) setDb(r.databases[0]);
-      })
-      .catch((e) => setLoadErr(String(e?.message ?? e)));
-  }, []);
-
+    if (!db && dbs.length) setDb(dbs[0]);
+  }, [db, dbs]);
   useEffect(() => {
     if (db) window.localStorage.setItem(DB_KEY, db);
   }, [db]);
-
   useEffect(() => {
     window.localStorage.setItem(CTX_KEY, useCtx ? "1" : "0");
   }, [useCtx]);
+  useEffect(() => {
+    window.localStorage.setItem(RAIL_KEY, railOpen ? "1" : "0");
+  }, [railOpen]);
 
-  const hydrate = useCallback(async (target: string) => {
-    if (!target) return;
-    try {
-      const [conv, disc] = await Promise.all([
-        llm.getConversation(target).catch(() => null),
-        llm.discover(target, 8).catch(() => null),
-      ]);
-      setDiscover(
-        (disc?.questions ?? [])
-          .map((it) =>
-            typeof it === "string"
-              ? it
-              : typeof (it as { question?: unknown })?.question === "string"
-                ? ((it as { question: string }).question)
-                : "",
-          )
-          .filter(Boolean),
-      );
-      const next: Msg[] = [];
-      for (const turn of conv?.history ?? []) {
-        if (turn.question)
-          next.push({ id: uid(), role: "user", text: String(turn.question) });
-        if (turn.answer)
-          next.push({
-            id: uid(),
-            role: "assistant",
-            text: String(turn.answer),
-            sql: typeof turn.sql === "string" ? turn.sql : null,
-          });
+  useEffect(() => {
+    if (!db) {
+      setDiscover([]);
+      return;
+    }
+    llm
+      .discover(db, 6)
+      .then((r) =>
+        setDiscover(
+          (r.questions ?? [])
+            .map((q) =>
+              typeof q === "string" ? q : (q as { question?: string })?.question ?? "",
+            )
+            .filter(Boolean),
+        ),
+      )
+      .catch(() => setDiscover([]));
+  }, [db]);
+
+  const activeQA = useMemo(
+    () => conv.history.find((q) => q.id === activeId) ?? null,
+    [conv.history, activeId],
+  );
+  const isPending = activeId !== null && activeId === pendingId;
+
+  const effectiveTab: ResultTab = useMemo(() => {
+    if (activeTab) return activeTab;
+    return activeQA?.defaultTab ?? "table";
+  }, [activeTab, activeQA]);
+
+  useEffect(() => {
+    if (!activeQA?.query_id) return;
+    const stored = window.localStorage.getItem(TAB_KEY(activeQA.query_id));
+    if (stored && ["chart", "table", "sql", "json"].includes(stored)) {
+      setActiveTab(stored as ResultTab);
+    } else {
+      setActiveTab(null);
+    }
+  }, [activeQA?.query_id]);
+
+  function changeTab(t: ResultTab) {
+    setActiveTab(t);
+    if (activeQA?.query_id) {
+      window.localStorage.setItem(TAB_KEY(activeQA.query_id), t);
+    }
+  }
+
+  const send = useCallback(
+    async (text: string) => {
+      if (!db || !text.trim()) return;
+      const q = text.trim();
+      setInput("");
+      const id = uid();
+      const draft: QA = {
+        id,
+        question: q,
+        answer: "",
+        sql: null,
+        data: [],
+        count: 0,
+        warnings: null,
+        related: null,
+        query_id: null,
+        defaultTab: "table",
+      };
+      conv.setHistory((h) => [...h, draft]);
+      setPendingId(id);
+      setActiveId(id);
+      setActiveTab(null);
+      abortRef.current?.abort();
+      const ac = new AbortController();
+      abortRef.current = ac;
+      try {
+        const r: QueryResult = await llm.query(db, q, useCtx, ac.signal);
+        conv.setHistory((h) =>
+          h.map((qa) =>
+            qa.id === id
+              ? {
+                  ...qa,
+                  answer: r.answer || "",
+                  sql: r.sql ?? null,
+                  data: r.data ?? [],
+                  count: r.count ?? 0,
+                  warnings: r.validation_warnings ?? null,
+                  related: r.related_questions ?? null,
+                  query_id: r.query_id ?? null,
+                  error: r.error ?? null,
+                  defaultTab: pickTab(r.data ?? []),
+                }
+              : qa,
+          ),
+        );
+      } catch (e) {
+        const msg =
+          (e as Error).name === "AbortError"
+            ? "Cancelled"
+            : String((e as Error)?.message ?? e);
+        conv.setHistory((h) =>
+          h.map((qa) => (qa.id === id ? { ...qa, error: msg } : qa)),
+        );
+      } finally {
+        setPendingId(null);
       }
-      setMessages(next);
+    },
+    [db, useCtx, conv],
+  );
+
+  const executeSaved = useCallback(
+    async (sq: SavedQuery) => {
+      if (!db) return;
+      const id = uid();
+      const draft: QA = {
+        id,
+        question: sq.question || sq.name,
+        answer: "",
+        sql: sq.sql_query,
+        data: [],
+        count: 0,
+        warnings: null,
+        related: null,
+        query_id: null,
+        defaultTab: "table",
+      };
+      conv.setHistory((h) => [...h, draft]);
+      setPendingId(id);
+      setActiveId(id);
+      setActiveTab(null);
+      try {
+        const r = await saved.execute(sq.id);
+        if (r.error) throw new Error(r.error);
+        conv.setHistory((h) =>
+          h.map((qa) =>
+            qa.id === id
+              ? {
+                  ...qa,
+                  data: r.data,
+                  count: r.count,
+                  defaultTab: pickTab(r.data),
+                }
+              : qa,
+          ),
+        );
+      } catch (e) {
+        conv.setHistory((h) =>
+          h.map((qa) =>
+            qa.id === id
+              ? { ...qa, error: String((e as Error)?.message ?? e) }
+              : qa,
+          ),
+        );
+      } finally {
+        setPendingId(null);
+      }
+    },
+    [db, saved, conv],
+  );
+
+  async function feedback(correct: boolean) {
+    if (!activeQA?.query_id || !db) return;
+    try {
+      await llm.feedback(db, activeQA.query_id, correct);
+      conv.setHistory((h) =>
+        h.map((qa) =>
+          qa.id === activeQA.id
+            ? { ...qa, feedback: correct ? "up" : "down" }
+            : qa,
+        ),
+      );
     } catch (e) {
-      setLoadErr(String((e as Error).message ?? e));
+      toast.error("Feedback failed: " + ((e as Error)?.message ?? "unknown"));
     }
-  }, []);
+  }
+
+  function insertAtCaret(text: string) {
+    const ta = composerRef.current;
+    if (!ta) {
+      setInput((s) => s + text);
+      return;
+    }
+    const start = ta.selectionStart ?? input.length;
+    const end = ta.selectionEnd ?? input.length;
+    const next = input.slice(0, start) + text + input.slice(end);
+    setInput(next);
+    requestAnimationFrame(() => {
+      ta.focus();
+      const pos = start + text.length;
+      ta.setSelectionRange(pos, pos);
+    });
+  }
 
   useEffect(() => {
-    hydrate(db);
-  }, [db, hydrate]);
-
-  useEffect(() => {
-    const el = listRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [messages, sending]);
-
-  async function send(text: string) {
-    if (!db || !text.trim() || sending) return;
-    const q = text.trim();
-    setInput("");
-    const userMsg: Msg = { id: uid(), role: "user", text: q };
-    const pendingId = uid();
-    setMessages((m) => [
-      ...m,
-      userMsg,
-      { id: pendingId, role: "pending", question: q },
-    ]);
-    setSending(true);
-    abortRef.current?.abort();
-    const ac = new AbortController();
-    abortRef.current = ac;
-    try {
-      const r: QueryResult = await llm.query(db, q, useCtx, ac.signal);
-      setMessages((m) =>
-        m.map((x) =>
-          x.id === pendingId
-            ? {
-                id: pendingId,
-                role: "assistant",
-                text: r.answer || (r.error ? "" : "(no answer)"),
-                sql: r.sql,
-                data: r.data,
-                count: r.count,
-                error: r.error,
-                warnings: r.validation_warnings,
-                related: r.related_questions,
-                query_id: r.query_id,
-              }
-            : x,
-        ),
-      );
-    } catch (e) {
-      const msg = (e as Error).name === "AbortError"
-        ? "Cancelled"
-        : String((e as Error).message ?? e);
-      setMessages((m) =>
-        m.map((x) =>
-          x.id === pendingId
-            ? { id: pendingId, role: "assistant", text: "", error: msg }
-            : x,
-        ),
-      );
-    } finally {
-      setSending(false);
+    function onKey(e: KeyboardEvent) {
+      const meta = e.metaKey || e.ctrlKey;
+      if (meta && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        composerRef.current?.focus();
+      } else if (meta && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        setRailOpen((v) => !v);
+      } else if (e.key === "Escape") {
+        if (abortRef.current && pendingId) {
+          abortRef.current.abort();
+        }
+      }
     }
-  }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [pendingId]);
 
-  async function clearConv() {
-    if (!db) return;
-    try {
-      await llm.clearConversation(db);
-      toast.success("Conversation cleared");
-    } catch (e) {
-      toast.error("Clear failed: " + ((e as Error).message ?? "unknown"));
-    }
-    setMessages([]);
-  }
-
-  async function feedback(msgId: string, correct: boolean) {
-    const m = messages.find((x) => x.id === msgId);
-    if (!m || m.role !== "assistant" || !m.query_id || !db) return;
-    try {
-      await llm.feedback(db, m.query_id, correct);
-      setMessages((arr) =>
-        arr.map((x) =>
-          x.id === msgId && x.role === "assistant"
-            ? { ...x, feedback: correct ? "up" : "down" }
-            : x,
-        ),
-      );
-    } catch (e) {
-      toast.error("Feedback failed: " + ((e as Error).message ?? "unknown"));
-    }
-  }
-
-  const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      send(input);
-    }
-  };
-
-  const empty = messages.length === 0;
+  const loadErr = dbErr || conv.reloadErr || saved.err;
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 18,
-        height: "100%",
-      }}
-    >
-      <header style={{ display: "flex", alignItems: "baseline", gap: 24 }}>
+    <div className="an">
+      <header className="an__header">
+        <button
+          type="button"
+          className="an__hamburger"
+          onClick={() => setRailOpen((v) => !v)}
+          aria-label="Toggle rail"
+        >
+          ☰
+        </button>
         <div>
           <span className="eyebrow">analytics · ask your db</span>
           <h1 style={{ marginTop: 6 }}>
@@ -226,33 +301,13 @@ export default function Analytics() {
             anything.
           </h1>
         </div>
-        <div
-          style={{
-            marginLeft: "auto",
-            display: "flex",
-            gap: 12,
-            alignItems: "center",
-          }}
-        >
-          <label
-            className="eyebrow"
-            style={{ display: "flex", alignItems: "center", gap: 8 }}
-          >
+        <div className="an__header-tools">
+          <label className="eyebrow" style={{ display: "flex", alignItems: "center", gap: 8 }}>
             db
             <select
+              className="an__db-select"
               value={db}
               onChange={(e) => setDb(e.target.value)}
-              style={{
-                background: "var(--panel)",
-                color: "var(--text)",
-                border: "1px solid var(--rule)",
-                borderRadius: 4,
-                padding: "6px 10px",
-                fontFamily: "var(--font-mono)",
-                fontSize: 12,
-                letterSpacing: "0.04em",
-                textTransform: "none",
-              }}
             >
               {dbs.length === 0 && <option value="">(loading…)</option>}
               {dbs.map((d) => (
@@ -262,19 +317,7 @@ export default function Analytics() {
               ))}
             </select>
           </label>
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: "var(--muted)",
-              cursor: "pointer",
-            }}
-          >
+          <label className="an__ctx">
             <input
               type="checkbox"
               checked={useCtx}
@@ -282,473 +325,93 @@ export default function Analytics() {
             />
             context
           </label>
-          <button type="button" onClick={clearConv} disabled={!db}>
+          <button
+            type="button"
+            onClick={() => conv.clear().then(() => toast.success("Conversation cleared"))}
+            disabled={!db}
+          >
             Clear
           </button>
         </div>
       </header>
 
       {loadErr && (
-        <div
-          style={{
-            padding: "10px 14px",
-            border: "1px solid var(--rule)",
-            borderRadius: 6,
-            color: "var(--danger, #d54a4a)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 12,
-          }}
-        >
+        <div className="an-result__error" style={{ gridColumn: "1 / -1" }}>
           API: {loadErr} · is the analytics API running on {llm.baseUrl}?
         </div>
       )}
 
-      <div
-        ref={listRef}
-        style={{
-          flex: 1,
-          minHeight: 320,
-          overflowY: "auto",
-          border: "1px solid var(--rule)",
-          borderRadius: 8,
-          background: "var(--panel)",
-          padding: 18,
-          display: "flex",
-          flexDirection: "column",
-          gap: 16,
-        }}
-      >
-        {empty && (
-          <EmptyState
-            discover={discover}
-            db={db}
-            onPick={(q) => send(q)}
-          />
-        )}
-        {messages.map((m) => (
-          <MessageRow
-            key={m.id}
-            msg={m}
-            onFeedback={(v) => feedback(m.id, v)}
-            onRelated={(q) => send(q)}
-          />
-        ))}
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          gap: 10,
-          alignItems: "flex-end",
-        }}
-      >
-        <textarea
-          rows={2}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={onKey}
-          placeholder={
-            db
-              ? "Ask a question about " + db + "…"
-              : "Select a database to start"
-          }
-          disabled={!db}
-          style={{
-            flex: 1,
-            resize: "vertical",
-            minHeight: 54,
-            maxHeight: 200,
-            padding: "10px 12px",
-            background: "var(--panel)",
-            color: "var(--text)",
-            border: "1px solid var(--rule)",
-            borderRadius: 6,
-            fontFamily: "var(--font-sans, inherit)",
-            fontSize: 14,
-            lineHeight: 1.4,
-          }}
-        />
-        <button
-          type="button"
-          onClick={() => send(input)}
-          disabled={!db || !input.trim() || sending}
-          style={{ minWidth: 88, height: 40 }}
-        >
-          {sending ? "…" : "Send"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function EmptyState({
-  discover,
-  db,
-  onPick,
-}: {
-  discover: string[];
-  db: string;
-  onPick: (q: string) => void;
-}) {
-  return (
-    <div
-      style={{
-        margin: "auto 0",
-        padding: 12,
-        display: "flex",
-        flexDirection: "column",
-        gap: 14,
-        alignItems: "flex-start",
-      }}
-    >
-      <div className="eyebrow">
-        {db ? `try a question · ${db}` : "no database selected"}
-      </div>
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 8,
-        }}
-      >
-        {discover.length === 0 && (
-          <div
-            style={{
-              color: "var(--muted)",
-              fontFamily: "var(--font-mono)",
-              fontSize: 12,
-            }}
-          >
-            Type a natural-language question below.
-          </div>
-        )}
-        {discover.map((q) => (
-          <button
-            key={q}
-            type="button"
-            onClick={() => onPick(q)}
-            style={{
-              padding: "8px 12px",
-              background: "transparent",
-              border: "1px solid var(--rule)",
-              borderRadius: 999,
-              color: "var(--ink-soft)",
-              fontSize: 13,
-              cursor: "pointer",
-              textAlign: "left",
-            }}
-          >
-            {q}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function MessageRow({
-  msg,
-  onFeedback,
-  onRelated,
-}: {
-  msg: Msg;
-  onFeedback: (v: boolean) => void;
-  onRelated: (q: string) => void;
-}) {
-  if (msg.role === "user") {
-    return (
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
-        <div
-          style={{
-            maxWidth: "75%",
-            padding: "10px 14px",
-            borderRadius: 10,
-            background:
-              "color-mix(in srgb, var(--accent) 14%, transparent)",
-            border: "1px solid color-mix(in srgb, var(--accent) 30%, var(--rule))",
-            fontSize: 14,
-            lineHeight: 1.45,
-            whiteSpace: "pre-wrap",
-          }}
-        >
-          {msg.text}
-        </div>
-      </div>
-    );
-  }
-  if (msg.role === "pending") {
-    return (
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <span className="led led--ok" />
-        <span
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
-            color: "var(--muted)",
-          }}
-        >
-          thinking…
-        </span>
-      </div>
-    );
-  }
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {msg.error ? (
-        <div
-          style={{
-            color: "var(--danger, #d54a4a)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 12,
-          }}
-        >
-          {msg.error}
-        </div>
-      ) : (
-        <div
-          style={{
-            fontSize: 14,
-            lineHeight: 1.5,
-            whiteSpace: "pre-wrap",
-          }}
-        >
-          {msg.text}
-        </div>
-      )}
-      {msg.warnings && msg.warnings.length > 0 && (
-        <ul
-          style={{
-            margin: 0,
-            paddingLeft: 16,
-            color: "var(--muted)",
-            fontSize: 12,
-          }}
-        >
-          {msg.warnings.map((w, i) => (
-            <li key={i}>{w}</li>
-          ))}
-        </ul>
-      )}
-      {msg.sql && (
-        <details>
-          <summary
-            style={{
-              cursor: "pointer",
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: "var(--muted)",
-            }}
-          >
-            sql
-          </summary>
-          <pre
-            style={{
-              marginTop: 6,
-              padding: 10,
-              background: "var(--ink-faint, rgba(0,0,0,0.04))",
-              border: "1px solid var(--rule)",
-              borderRadius: 6,
-              fontFamily: "var(--font-mono)",
-              fontSize: 12,
-              overflowX: "auto",
-              whiteSpace: "pre",
-            }}
-          >
-            {msg.sql}
-          </pre>
-        </details>
-      )}
-      {msg.data && msg.data.length > 0 && (
-        <details open={msg.data.length <= 20}>
-          <summary
-            style={{
-              cursor: "pointer",
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: "var(--muted)",
-            }}
-          >
-            data · {msg.count ?? msg.data.length} row
-            {(msg.count ?? msg.data.length) === 1 ? "" : "s"}
-          </summary>
-          <ResultTable rows={msg.data} />
-        </details>
-      )}
-      {msg.related && msg.related.length > 0 && (
-        <div
-          style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}
-        >
-          {msg.related.map((q) => (
-            <button
-              key={q}
-              type="button"
-              onClick={() => onRelated(q)}
-              style={{
-                padding: "4px 10px",
-                background: "transparent",
-                border: "1px solid var(--rule)",
-                borderRadius: 999,
-                color: "var(--muted)",
-                fontSize: 12,
-                cursor: "pointer",
-              }}
-            >
-              {q}
-            </button>
-          ))}
-        </div>
-      )}
-      {msg.query_id ? (
-        <div
-          style={{
-            display: "flex",
-            gap: 6,
-            marginTop: 2,
-            color: "var(--muted)",
-          }}
-        >
-          <FeedbackBtn
-            active={msg.feedback === "up"}
-            label="👍"
-            onClick={() => onFeedback(true)}
-          />
-          <FeedbackBtn
-            active={msg.feedback === "down"}
-            label="👎"
-            onClick={() => onFeedback(false)}
-          />
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function FeedbackBtn({
-  active,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        width: 28,
-        height: 24,
-        padding: 0,
-        background: active
-          ? "color-mix(in srgb, var(--accent) 14%, transparent)"
-          : "transparent",
-        border: "1px solid var(--rule)",
-        borderRadius: 4,
-        cursor: "pointer",
-        fontSize: 12,
-      }}
-    >
-      {label}
-    </button>
-  );
-}
-
-function ResultTable({ rows }: { rows: Row[] }) {
-  const cols = useMemo(() => {
-    const set = new Set<string>();
-    for (const r of rows.slice(0, 50)) for (const k of Object.keys(r)) set.add(k);
-    return Array.from(set);
-  }, [rows]);
-  const view = rows.slice(0, 200);
-  return (
-    <div
-      style={{
-        marginTop: 6,
-        maxHeight: 320,
-        overflow: "auto",
-        border: "1px solid var(--rule)",
-        borderRadius: 6,
-      }}
-    >
-      <table
-        style={{
-          width: "100%",
-          borderCollapse: "collapse",
-          fontFamily: "var(--font-mono)",
-          fontSize: 12,
-        }}
-      >
-        <thead>
-          <tr>
-            {cols.map((c) => (
-              <th
-                key={c}
-                style={{
-                  position: "sticky",
-                  top: 0,
-                  background: "var(--panel)",
-                  borderBottom: "1px solid var(--rule)",
-                  padding: "6px 10px",
-                  textAlign: "left",
-                  fontSize: 10,
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
-                  color: "var(--muted)",
-                  fontWeight: 500,
+      <LeftRail
+        isOpen={railOpen}
+        onClose={() => setRailOpen(false)}
+        sections={
+          <>
+            <RailSection title="history" count={conv.history.length}>
+              <HistoryList
+                history={conv.history}
+                activeId={activeId}
+                onPick={(id) => {
+                  setActiveId(id);
+                  setActiveTab(null);
                 }}
-              >
-                {c}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {view.map((r, i) => (
-            <tr key={i}>
-              {cols.map((c) => (
-                <td
-                  key={c}
-                  style={{
-                    padding: "6px 10px",
-                    borderBottom: "1px solid var(--rule)",
-                    verticalAlign: "top",
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                    maxWidth: 320,
-                  }}
-                >
-                  {formatCell(r[c])}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {rows.length > 200 && (
-        <div
-          style={{
-            padding: "8px 12px",
-            color: "var(--muted)",
-            fontSize: 11,
-            fontFamily: "var(--font-mono)",
-          }}
-        >
-          showing 200 of {rows.length}
-        </div>
-      )}
+              />
+            </RailSection>
+            <RailSection title="discover">
+              <DiscoverList questions={discover} onPick={send} />
+            </RailSection>
+            <RailSection title="saved" count={saved.saved.length}>
+              <SavedList
+                saved={saved.saved}
+                onPick={executeSaved}
+                onDelete={saved.remove}
+              />
+            </RailSection>
+            <RailSection
+              title="schema"
+              defaultOpen={false}
+              onToggle={(open) => open && setSchemaEnabled(true)}
+            >
+              <SchemaTree
+                schema={schemaQ.schema}
+                loading={schemaQ.loading}
+                err={schemaQ.err}
+                onColumnClick={insertAtCaret}
+              />
+            </RailSection>
+          </>
+        }
+        composer={
+          <Composer
+            ref={composerRef}
+            value={input}
+            onChange={setInput}
+            onSubmit={() => send(input)}
+            disabled={!db}
+            sending={pendingId !== null}
+            placeholder={
+              db ? "Ask a question about " + db + "…" : "Select a database to start"
+            }
+          />
+        }
+      />
+
+      <ResultPane
+        qa={activeQA}
+        pending={isPending}
+        activeTab={effectiveTab}
+        onTabChange={changeTab}
+        onFeedback={feedback}
+        onRelated={send}
+        onSave={async (body) => {
+          const id = await saved.create(body);
+          return id;
+        }}
+        onToast={(msg, kind) => {
+          if (kind === "err") toast.error(msg);
+          else toast.success(msg);
+        }}
+        dbName={db}
+      />
     </div>
   );
-}
-
-function formatCell(v: unknown): string {
-  if (v === null || v === undefined) return "—";
-  if (typeof v === "object") return JSON.stringify(v);
-  return String(v);
 }
