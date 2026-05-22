@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { loadDataSources, _resetForTests } from './dataSources.js';
+import { loadDataSources, _resetForTests, getReadOnlyPool, closeAllReadOnlyPools } from './dataSources.js';
 
 let tmpFile;
 beforeEach(() => {
@@ -56,5 +56,24 @@ describe('loadDataSources', () => {
     }));
     const sources = loadDataSources(tmpFile);
     expect(sources.dashboard.db_ro.host).toBe('override');
+  });
+});
+
+describe('getReadOnlyPool', () => {
+  beforeEach(() => _resetForTests());
+  afterEach(async () => { await closeAllReadOnlyPools(); });
+
+  it('throws on unknown data source', () => {
+    expect(() => getReadOnlyPool('does_not_exist')).toThrow('unknown_data_source');
+  });
+
+  it('caches a pool per data source name', () => {
+    fs.writeFileSync(tmpFile, JSON.stringify({
+      dashboard: { kind: 'dashboard', scope: 'overview',
+        db_ro: { host: 'h', port: 1, database: 'd', user: 'u', password: '' } }
+    }));
+    const a = getReadOnlyPool('dashboard', tmpFile);
+    const b = getReadOnlyPool('dashboard', tmpFile);
+    expect(a).toBe(b);
   });
 });
