@@ -10,3 +10,6 @@ logs/
 .superpowers/
 *.log
 .DS_Store
+
+# PM2 (machine-specific paths / secrets)
+ecosystem.config.cjs
