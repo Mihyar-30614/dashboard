@@ -7,6 +7,7 @@ import SqlView from "./SqlView";
 import JsonView from "./JsonView";
 import RelatedChips from "./RelatedChips";
 import ResultActions from "./ResultActions";
+import AnswerText from "./AnswerText";
 
 const TABS: ResultTab[] = ["chart", "table", "sql", "json"];
 
@@ -97,7 +98,9 @@ export default function ResultPane({
       {qa.answer && (
         <div className="an-result__a">
           <span className="an-result__a-label">A</span>
-          <span>{qa.answer}</span>
+          <span>
+            <AnswerText text={qa.answer} />
+          </span>
         </div>
       )}
 
