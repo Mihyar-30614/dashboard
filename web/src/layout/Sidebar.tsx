@@ -1,7 +1,8 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQueryClient, useIsFetching } from "@tanstack/react-query";
 import {
+  Box,
   ChevronLeft,
   ChevronRight,
   Hammer,
@@ -17,6 +18,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { api } from "../api/client";
+import { useApps } from "../api/hooks";
 import { hasDirty } from "../grid/savingRegistry";
 import { useToast } from "../ui/Toast";
 
@@ -28,7 +30,13 @@ type Item = {
   end?: boolean;
 };
 
-const sections: { label: string; items: Item[] }[] = [
+const APP_ICONS: Record<string, LucideIcon> = {
+  sportly: Trophy,
+  honeydoeh: Hammer,
+  debtmanager: Wallet,
+};
+
+const STATIC_SECTIONS: { label: string; items: Item[] }[] = [
   {
     label: "Surveys",
     items: [
@@ -41,14 +49,6 @@ const sections: { label: string; items: Item[] }[] = [
       { slug: "analytics", label: "Ask DB", Icon: Sparkles, path: "/analytics" },
     ],
   },
-  {
-    label: "Properties",
-    items: [
-      { slug: "sportly", label: "Sportly", Icon: Trophy, path: "/app/sportly" },
-      { slug: "honeydoeh", label: "Honey Do Eh", Icon: Hammer, path: "/app/honeydoeh" },
-      { slug: "debtmanager", label: "DebtManager", Icon: Wallet, path: "/app/debtmanager" },
-    ],
-  },
 ];
 
 const STORAGE_KEY = "sidebar:collapsed";
@@ -58,6 +58,22 @@ export default function Sidebar() {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem(STORAGE_KEY) === "1";
   });
+  const { data: appList } = useApps();
+
+  const sections = useMemo(() => {
+    const propertyItems: Item[] = (appList ?? []).map((a) => ({
+      slug: a.slug,
+      label: a.label,
+      Icon: APP_ICONS[a.slug] ?? Box,
+      path: `/app/${a.slug}`,
+    }));
+    return [
+      ...STATIC_SECTIONS,
+      ...(propertyItems.length
+        ? [{ label: "Properties", items: propertyItems }]
+        : []),
+    ];
+  }, [appList]);
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, collapsed ? "1" : "0");

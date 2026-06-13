@@ -7,7 +7,7 @@ import "./theme.css";
 
 const qc = new QueryClient({
   defaultOptions: {
-    queries: { staleTime: 25_000, refetchInterval: 30_000, retry: 1 },
+    queries: { retry: 1 },
   },
 });
 

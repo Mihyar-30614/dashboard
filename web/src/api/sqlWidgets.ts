@@ -35,6 +35,7 @@ export function useSqlWidgets() {
   return useQuery({
     queryKey: ["sql-widgets"],
     queryFn: () => api.get<SqlWidget[]>("/api/sql-widgets"),
+    staleTime: Infinity,
   });
 }
 
@@ -43,6 +44,7 @@ export function useSqlWidget(id: number) {
     queryKey: ["sql-widget", id],
     queryFn: () => api.get<SqlWidget>(`/api/sql-widgets/${id}`),
     enabled: Number.isFinite(id),
+    staleTime: Infinity,
   });
 }
 
@@ -50,6 +52,7 @@ export function useSqlDataSources() {
   return useQuery({
     queryKey: ["sql-data-sources"],
     queryFn: () => api.get<DataSource[]>("/api/sql-widgets/sources"),
+    staleTime: Infinity,
   });
 }
 
@@ -61,6 +64,8 @@ export function useSqlRun(id: number, range: string) {
         `/api/sql-widgets/${id}/run?range=${encodeURIComponent(range)}`
       ),
     enabled: Number.isFinite(id),
+    staleTime: 25_000,
+    refetchInterval: 30_000,
   });
 }
 

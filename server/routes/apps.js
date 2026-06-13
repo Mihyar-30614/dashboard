@@ -3,11 +3,15 @@ import { loadApps } from "../config.js";
 import { requireAuth } from "../auth/session.js";
 import { snapshot as pm2Snapshot } from "../collectors/pm2.js";
 import { checkHealth } from "../collectors/health.js";
+import { appsCache } from "../cache.js";
 
 const router = Router();
 router.use(requireAuth);
 
-router.get("/", async (_req, res) => {
+const APPS_TTL_MS = 30_000;
+const CACHE_KEY = "apps:list";
+
+async function fetchAppsList() {
   const apps = loadApps();
   let pm2 = {};
   try {
@@ -16,7 +20,7 @@ router.get("/", async (_req, res) => {
     pm2 = {};
   }
 
-  const out = await Promise.all(
+  return Promise.all(
     Object.values(apps).map(async (a) => {
       const pm = pm2[a.pm2_name] || { status: "unknown" };
       const health = await checkHealth(a.health_url);
@@ -31,6 +35,14 @@ router.get("/", async (_req, res) => {
       };
     }),
   );
+}
+
+router.get("/", async (_req, res) => {
+  const cached = appsCache.get(CACHE_KEY);
+  if (cached) return res.json(cached);
+
+  const out = await fetchAppsList();
+  appsCache.set(CACHE_KEY, out, APPS_TTL_MS);
   res.json(out);
 });
 

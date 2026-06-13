@@ -33,3 +33,4 @@ export class Cache {
 }
 
 export const metricsCache = new Cache({ max: 1000 });
+export const appsCache = new Cache({ max: 10 });

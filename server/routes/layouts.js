@@ -2,17 +2,10 @@ import { Router } from "express";
 import { query } from "../db.js";
 import { requireAuth } from "../auth/session.js";
 import { KIND_INDEX } from "../widgets/registry.js";
-import { loadApps } from "../config.js";
+import { loadApps, validScreens } from "../config.js";
 
 const router = Router();
 router.use(requireAuth);
-
-const VALID_SCREENS = new Set([
-  "overview",
-  "sportly",
-  "honeydoeh",
-  "debtmanager",
-]);
 
 function validateLayout(arr) {
   if (!Array.isArray(arr)) return "not_array";
@@ -95,7 +88,7 @@ function defaultLayout(screen) {
 
 router.get("/:screen", async (req, res) => {
   const screen = req.params.screen;
-  if (!VALID_SCREENS.has(screen))
+  if (!validScreens().has(screen))
     return res.status(400).json({ error: "bad_screen" });
   const { rows } = await query(
     `SELECT layout, updated_at FROM dashboard_layouts WHERE user_id=$1 AND screen=$2`,
@@ -111,7 +104,7 @@ router.get("/:screen", async (req, res) => {
 
 router.put("/:screen", async (req, res) => {
   const screen = req.params.screen;
-  if (!VALID_SCREENS.has(screen))
+  if (!validScreens().has(screen))
     return res.status(400).json({ error: "bad_screen" });
   const reason = validateLayout(req.body?.layout);
   if (reason) return res.status(400).json({ error: reason });

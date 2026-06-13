@@ -1,0 +1,153 @@
+[
+  {
+    "kind": "users_total",
+    "label": "Users (total)",
+    "description": "Lifetime registered user count for the selected app.",
+    "defaultSize": { "w": 2, "h": 2 },
+    "scope": "app",
+    "paramsSchema": []
+  },
+  {
+    "kind": "signups_timeseries",
+    "label": "Signups over time",
+    "description": "Daily new account creations plotted over the selected range.",
+    "defaultSize": { "w": 6, "h": 4 },
+    "scope": "app",
+    "paramsSchema": [
+      { "name": "range", "type": "enum", "values": ["7d", "30d", "90d"], "default": "30d" },
+      { "name": "chart_type", "type": "enum", "values": ["line", "bar", "area"], "default": "line" }
+    ]
+  },
+  {
+    "kind": "dau",
+    "label": "DAU",
+    "description": "Daily active users — distinct users seen in the last 24h.",
+    "defaultSize": { "w": 2, "h": 2 },
+    "scope": "app",
+    "paramsSchema": []
+  },
+  {
+    "kind": "active_timeseries",
+    "label": "DAU over time",
+    "description": "Daily active users trended across the selected range.",
+    "defaultSize": { "w": 6, "h": 4 },
+    "scope": "app",
+    "paramsSchema": [
+      { "name": "range", "type": "enum", "values": ["7d", "30d"], "default": "30d" },
+      { "name": "chart_type", "type": "enum", "values": ["line", "bar", "area"], "default": "line" }
+    ]
+  },
+  {
+    "kind": "health",
+    "label": "Health",
+    "description": "Up/down status and response latency from the health probe.",
+    "defaultSize": { "w": 2, "h": 2 },
+    "scope": "both",
+    "paramsSchema": []
+  },
+  {
+    "kind": "pm2",
+    "label": "PM2 status",
+    "description": "Process state, CPU, and memory reported by PM2.",
+    "defaultSize": { "w": 3, "h": 2 },
+    "scope": "both",
+    "paramsSchema": []
+  },
+  {
+    "kind": "http_rate",
+    "label": "Requests/sec",
+    "description": "HTTP request throughput from nginx access logs.",
+    "defaultSize": { "w": 4, "h": 3 },
+    "scope": "app",
+    "paramsSchema": []
+  },
+  {
+    "kind": "http_errors",
+    "label": "HTTP errors",
+    "description": "Rate of 4xx and 5xx responses over the last window.",
+    "defaultSize": { "w": 4, "h": 3 },
+    "scope": "app",
+    "paramsSchema": []
+  },
+  {
+    "kind": "http_latency",
+    "label": "p95 latency",
+    "description": "95th-percentile response time across recent requests.",
+    "defaultSize": { "w": 4, "h": 3 },
+    "scope": "app",
+    "paramsSchema": []
+  },
+  {
+    "kind": "kpi",
+    "label": "KPI value",
+    "description": "Single configured KPI displayed as a large numeric readout.",
+    "defaultSize": { "w": 3, "h": 2 },
+    "scope": "app",
+    "paramsSchema": [{ "name": "key", "type": "string", "required": true }]
+  },
+  {
+    "kind": "kpi_timeseries",
+    "label": "KPI over time",
+    "description": "Configured KPI trended as a line chart over time.",
+    "defaultSize": { "w": 6, "h": 4 },
+    "scope": "app",
+    "paramsSchema": [
+      { "name": "key", "type": "string", "required": true },
+      { "name": "range", "type": "enum", "values": ["7d", "30d", "90d"], "default": "30d" },
+      { "name": "chart_type", "type": "enum", "values": ["line", "bar", "area"], "default": "line" }
+    ]
+  },
+  {
+    "kind": "kpi_sparkline",
+    "label": "KPI · sparkline",
+    "description": "Compact KPI value with inline sparkline showing recent trend.",
+    "defaultSize": { "w": 3, "h": 2 },
+    "scope": "app",
+    "paramsSchema": [
+      { "name": "key", "type": "string", "required": true },
+      { "name": "range", "type": "enum", "values": ["7d", "30d", "90d"], "default": "30d" }
+    ]
+  },
+  {
+    "kind": "kpi_delta",
+    "label": "KPI · delta vs prior",
+    "description": "Current KPI value plus change vs the prior period.",
+    "defaultSize": { "w": 3, "h": 2 },
+    "scope": "app",
+    "paramsSchema": [
+      { "name": "key", "type": "string", "required": true },
+      { "name": "range", "type": "enum", "values": ["7d", "30d", "90d"], "default": "30d" }
+    ]
+  },
+  {
+    "kind": "kpi_target",
+    "label": "KPI · target",
+    "description": "KPI value with progress bar toward a configured target.",
+    "defaultSize": { "w": 3, "h": 2 },
+    "scope": "app",
+    "paramsSchema": [
+      { "name": "key", "type": "string", "required": true },
+      { "name": "target", "type": "number", "required": true },
+      { "name": "direction", "type": "enum", "values": ["higher_is_better", "lower_is_better"], "default": "higher_is_better" }
+    ]
+  },
+  {
+    "kind": "kpi_multistat",
+    "label": "KPI · multi-stat",
+    "description": "Side-by-side readout of several KPIs in one card.",
+    "defaultSize": { "w": 6, "h": 2 },
+    "scope": "app",
+    "paramsSchema": [{ "name": "keys", "type": "string", "required": true }]
+  },
+  {
+    "kind": "sql",
+    "label": "Custom SQL",
+    "description": "Render saved custom SQL queries as number, line, bar, or table.",
+    "defaultSize": { "w": 3, "h": 2 },
+    "scope": "both",
+    "paramsSchema": [
+      { "name": "widget_id", "type": "number", "required": true },
+      { "name": "range", "type": "enum", "values": ["7d", "30d", "90d"], "default": "30d" }
+    ]
+  }
+]

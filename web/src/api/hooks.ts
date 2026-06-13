@@ -1,6 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "./client";
 
+const METRIC_STALE_MS = 25_000;
+const METRIC_REFETCH_MS = 30_000;
+
 type AppInfo = {
   slug: string;
   label: string;
@@ -17,6 +20,7 @@ export function useMe() {
     queryFn: () =>
       api.get<{ id: number; email: string; is_admin: boolean }>("/api/auth/me"),
     retry: false,
+    staleTime: Infinity,
   });
 }
 
@@ -24,6 +28,8 @@ export function useApps() {
   return useQuery({
     queryKey: ["apps"],
     queryFn: () => api.get<AppInfo[]>("/api/apps"),
+    staleTime: METRIC_STALE_MS,
+    refetchInterval: METRIC_REFETCH_MS,
   });
 }
 
@@ -35,6 +41,8 @@ export function useMetric(kind: string, params: Record<string, unknown> = {}) {
       api.get<{ data?: unknown; error?: string; stale?: boolean }>(
         `/api/metrics/${kind}?${qs}`,
       ),
+    staleTime: METRIC_STALE_MS,
+    refetchInterval: METRIC_REFETCH_MS,
   });
 }
 
@@ -45,6 +53,7 @@ export function useLayout(screen: string) {
       api.get<{ layout: any[]; default?: boolean; updated_at?: string }>(
         `/api/layouts/${screen}`,
       ),
+    staleTime: Infinity,
   });
 }
 
@@ -58,3 +67,5 @@ export function useSaveLayout(screen: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["layout", screen] }),
   });
 }
+
+export type { AppInfo };

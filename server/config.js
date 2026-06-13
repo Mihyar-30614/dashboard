@@ -15,3 +15,7 @@ export function loadApps(p = defaultPath) {
     ]),
   );
 }
+
+export function validScreens(appsPath = defaultPath) {
+  return new Set(["overview", ...Object.keys(loadApps(appsPath))]);
+}

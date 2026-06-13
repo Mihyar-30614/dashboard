@@ -6,6 +6,29 @@ const SLIDING_THRESHOLD_DAYS = 7;
 const cache = new Map();
 const CACHE_MS = 60_000;
 
+function cookieName() {
+  return process.env.SESSION_COOKIE_NAME || 'ds';
+}
+
+function ttlMs() {
+  return Number(process.env.SESSION_TTL_DAYS || 30) * 86_400_000;
+}
+
+export function clearSessionCookie(res) {
+  res.clearCookie(cookieName(), { path: '/' });
+}
+
+export function setSessionCookie(res, id) {
+  const secure = process.env.NODE_ENV === 'production';
+  res.cookie(cookieName(), id, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure,
+    path: '/',
+    maxAge: ttlMs()
+  });
+}
+
 function ttlDays() {
   return Number(process.env.SESSION_TTL_DAYS || 30);
 }
@@ -57,8 +80,15 @@ export async function destroySession(id) {
 
 export function sessionMiddleware() {
   return async (req, res, next) => {
-    const name = process.env.SESSION_COOKIE_NAME || 'ds';
-    const id = req.cookies?.[name];
+    const name = cookieName();
+    let id = req.cookies?.[name];
+    if (id) {
+      const rotated = await rotateIfStale(id);
+      if (rotated?.id && rotated.id !== id) {
+        id = rotated.id;
+        setSessionCookie(res, rotated.id);
+      }
+    }
     const session = await loadSession(id);
     if (session) req.user = { id: session.user_id, email: session.email, is_admin: session.is_admin };
     req.sessionId = session?.id || null;

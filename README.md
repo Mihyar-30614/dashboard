@@ -7,7 +7,7 @@ Self-hosted operations dashboard that aggregates metrics from monitored applicat
 | Area        | Choice |
 |------------|--------|
 | Runtime    | Node.js (ECMAScript modules) |
-| API        | Express, PostgreSQL (`pg`), pino logging |
+| API        | Express, PostgreSQL (`pg`), morgan logging |
 | Web        | React 18, TypeScript, Vite, TanStack Query, Gridstack, Recharts |
 
 ## Repo layout
@@ -16,6 +16,7 @@ Self-hosted operations dashboard that aggregates metrics from monitored applicat
 - **`web/`** — SPA source; **`web/dist`** is the default Vite output (gitignored built assets).
 - **`web-prod/`** — Assets the production server serves; populate from your build output (typically copy or rsync **`web/dist`** → **`web-prod/`**). Directory is gitignored.
 - **`config/apps.json`** — Per-app labels, DB connection info, metric SQL snippets, HTTP health URLs, PM2 names, nginx log paths.
+- **`config/widgets.json`** — Shared widget catalog (kinds, sizes, scopes); used by server validation and the web registry.
 - **`config/data_sources.json`** — Read-only Postgres roles used by SQL widgets (passwords separate — see Configuration).
 - **`scripts/`** — `migrate.js`, `seed-admin.js`, shell helpers (`backup.sh`, `grant-readers.sh`).
 
@@ -43,15 +44,7 @@ Self-hosted operations dashboard that aggregates metrics from monitored applicat
 
    For local dev the browser talks to **Vite** on **`http://localhost:4210`**, which proxies `/api` to the API. Set **`APP_ORIGIN`** to include that origin so non-GET API requests from Vite succeed (comma-separated origins if you need multiple).
 
-3. **Schema** — Run SQL migrations once the dashboard database exists:
-
-   ```bash
-   npm run migrate
-   ```
-
-   Migrations live under `migrations/` as ordered `*.sql` files.
-
-4. **Run**
+3. **Run**
 
    ```bash
    # API only (defaults to dev port derived from `.env`; often 4110)

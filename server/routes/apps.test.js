@@ -2,11 +2,13 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import { buildApp } from '../app.js';
 import { seedAdmin } from '../auth/seed.js';
+import { appsCache } from '../cache.js';
 import * as pm2 from '../collectors/pm2.js';
 import * as health from '../collectors/health.js';
 
 let app, agent;
 beforeEach(async () => {
+  appsCache.clear();
   process.env.APP_DB_PASSWORDS_JSON = JSON.stringify({ sportly: 'x', honeydoeh: 'x', debtmanager: 'x' });
   await seedAdmin('admin@example.com', 'zX9!muPpetDance#Lurking');
   vi.spyOn(pm2, 'snapshot').mockResolvedValue({
@@ -30,5 +32,14 @@ describe('GET /api/apps', () => {
     const sportly = res.body.find(a => a.slug === 'sportly');
     expect(sportly.pm2_status).toBe('online');
     expect(sportly.health.ok).toBe(true);
+  });
+
+  it('serves cached response within TTL', async () => {
+    const healthSpy = vi.spyOn(health, 'checkHealth');
+    healthSpy.mockClear();
+    await agent.get('/api/apps');
+    const callsAfterFirst = healthSpy.mock.calls.length;
+    await agent.get('/api/apps');
+    expect(healthSpy.mock.calls.length).toBe(callsAfterFirst);
   });
 });

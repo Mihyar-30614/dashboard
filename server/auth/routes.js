@@ -2,7 +2,7 @@ import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { dbPool, query } from '../db.js';
 import { verifyPassword, needsRehash, hashPassword } from './password.js';
-import { createSession, destroySession, requireAuth } from './session.js';
+import { createSession, destroySession, requireAuth, setSessionCookie, clearSessionCookie } from './session.js';
 import { consumeInviteToken } from './invites.js';
 import { validatePolicy } from './password.js';
 
@@ -14,20 +14,6 @@ const loginLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false
 });
-
-const cookieName = () => process.env.SESSION_COOKIE_NAME || 'ds';
-const ttlMs = () => Number(process.env.SESSION_TTL_DAYS || 30) * 86_400_000;
-
-export function setSessionCookie(res, id) {
-  const secure = process.env.NODE_ENV === 'production';
-  res.cookie(cookieName(), id, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure,
-    path: '/',
-    maxAge: ttlMs()
-  });
-}
 
 router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body || {};
@@ -55,7 +41,7 @@ router.post('/login', loginLimiter, async (req, res) => {
 
 router.post('/logout', async (req, res) => {
   if (req.sessionId) await destroySession(req.sessionId);
-  res.clearCookie(cookieName(), { path: '/' });
+  clearSessionCookie(res);
   res.json({ ok: true });
 });
 
