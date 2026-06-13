@@ -16,3 +16,4 @@ ecosystem.config.cjs
 
 # Local deployment script (paths / backup policy vary by host)
 deploy.sh
+restart-seer-api.sh
