@@ -243,3 +243,26 @@ describe('GET /api/sql-widgets/:id/run', () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe('GET /api/sql-widgets/schema', () => {
+  it('requires admin', async () => {
+    const res = await userAgent.get('/api/sql-widgets/schema?data_source=dashboard');
+    expect(res.status).toBe(403);
+  });
+
+  it('400 on unknown data source', async () => {
+    const res = await adminAgent.get('/api/sql-widgets/schema?data_source=nope');
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('unknown_data_source');
+  });
+
+  it('returns SchemaInfo-shaped tables and columns', async () => {
+    const res = await adminAgent.get('/api/sql-widgets/schema?data_source=dashboard');
+    expect(res.status).toBe(200);
+    expect(res.body.db_name).toBe('dashboard');
+    expect(res.body.tables).toContain('users');
+    const cols = res.body.schemas.users.map((c) => c.name);
+    expect(cols).toContain('email');
+    expect(res.body.schemas.users[0]).toHaveProperty('type');
+  });
+});

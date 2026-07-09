@@ -69,6 +69,24 @@ export function useSqlRun(id: number, range: string) {
   });
 }
 
+export type SchemaInfo = {
+  db_name: string;
+  tables: string[];
+  schemas: Record<string, Array<{ name: string; type: string; nullable?: boolean }>>;
+};
+
+export function useSqlSchema(dataSource: string) {
+  return useQuery({
+    queryKey: ["sql-schema", dataSource],
+    queryFn: () =>
+      api.get<SchemaInfo>(
+        `/api/sql-widgets/schema?data_source=${encodeURIComponent(dataSource)}`
+      ),
+    enabled: dataSource !== "",
+    staleTime: Infinity,
+  });
+}
+
 export function useSqlPreview() {
   return useMutation({
     mutationFn: (body: { data_source: string; sql: string; range: string }) =>

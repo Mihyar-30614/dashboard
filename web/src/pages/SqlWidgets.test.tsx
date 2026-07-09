@@ -1,9 +1,27 @@
 import { describe, it, expect, vi } from "vitest";
+import { forwardRef } from "react";
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import SqlWidgets from "./SqlWidgets";
 import * as hooks from "../api/sqlWidgets";
+
+// CodeMirror is not a form control; shim it as a textarea for these tests.
+vi.mock("@uiw/react-codemirror", () => ({
+  __esModule: true,
+  default: forwardRef(function CodeMirrorShim(
+    { value, onChange, "aria-label": ariaLabel }: any,
+    _ref: any,
+  ) {
+    return (
+      <textarea
+        aria-label={ariaLabel}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    );
+  }),
+}));
 
 function wrap(ui: React.ReactElement) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });

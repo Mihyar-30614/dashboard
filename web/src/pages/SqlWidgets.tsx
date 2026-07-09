@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
+import { sql as sqlLang } from "@codemirror/lang-sql";
 import {
-  useSqlWidgets, useSqlDataSources, useSqlPreview,
+  useSqlWidgets, useSqlDataSources, useSqlPreview, useSqlSchema,
   useCreateSqlWidget, useUpdateSqlWidget, useDeleteSqlWidget,
 } from "../api/sqlWidgets";
 import type { SqlWidget, PreviewResult, SqlVizKind } from "../api/sqlWidgets";
 import ConfirmDialog from "../ui/ConfirmDialog";
+import SchemaTree from "../analytics/rail/SchemaTree";
 
 export default function SqlWidgets() {
   const list = useSqlWidgets();
@@ -105,6 +108,23 @@ function Editor({
   const previewMut = useSqlPreview();
   const createMut = useCreateSqlWidget();
   const updateMut = useUpdateSqlWidget(isNew ? 0 : (widget as SqlWidget).id);
+  const schemaQ = useSqlSchema(dataSource);
+  const cmRef = useRef<ReactCodeMirrorRef>(null);
+
+  function insertAtCursor(text: string) {
+    const view = cmRef.current?.view;
+    if (!view) {
+      setSql((s) => s + text);
+      setPreviewedHash(null);
+      return;
+    }
+    const { from, to } = view.state.selection.main;
+    view.dispatch({
+      changes: { from, to, insert: text },
+      selection: { anchor: from + text.length },
+    });
+    view.focus();
+  }
 
   async function runPreview() {
     setPreviewError(null);
@@ -155,17 +175,40 @@ function Editor({
         {(sources.data ?? []).map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
       </select>
 
+      {dataSource && (
+        <details style={{ border: "1px solid var(--rule)", borderRadius: 6, padding: "6px 10px" }}>
+          <summary style={{
+            cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 10,
+            letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--muted)",
+          }}>
+            schema · {dataSource}
+          </summary>
+          <div style={{ maxHeight: 220, overflowY: "auto", marginTop: 6 }}>
+            <SchemaTree
+              schema={schemaQ.data ?? null}
+              loading={schemaQ.isLoading}
+              err={(schemaQ.error as Error | null)?.message ?? null}
+              onColumnClick={insertAtCursor}
+            />
+          </div>
+        </details>
+      )}
+
       <label htmlFor="sw-sql">SQL</label>
       <div style={{ fontSize: 11, color: "var(--muted)" }}>
         Use <code>:range_days</code> to bind the 7d/30d/90d range picker.
       </div>
-      <textarea
-        id="sw-sql"
-        rows={12}
-        style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}
-        value={sql}
-        onChange={e => { setSql(e.target.value); setPreviewedHash(null); }}
-      />
+      <div style={{ border: "1px solid var(--rule)", borderRadius: 6, overflow: "hidden" }}>
+        <CodeMirror
+          ref={cmRef}
+          value={sql}
+          height="240px"
+          extensions={[sqlLang()]}
+          basicSetup={{ lineNumbers: true, foldGutter: false }}
+          onChange={(v) => { setSql(v); setPreviewedHash(null); }}
+          aria-label="SQL"
+        />
+      </div>
 
       <div style={{ display: "flex", gap: 8 }}>
         <button type="button" onClick={runPreview}

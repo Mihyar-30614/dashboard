@@ -35,6 +35,35 @@ router.get("/sources", (_req, res) => {
   res.json(listDataSources());
 });
 
+// /schema must be before /:id
+router.get("/schema", requireAdmin, async (req, res) => {
+  const dataSource = String(req.query.data_source || "");
+  const sources = listDataSources();
+  if (!sources.some(s => s.name === dataSource)) {
+    return res.status(400).json({ error: "unknown_data_source" });
+  }
+  try {
+    const pool = getReadOnlyPool(dataSource);
+    const { rows } = await pool.query(
+      `SELECT table_name, column_name, data_type, is_nullable
+         FROM information_schema.columns
+        WHERE table_schema = 'public'
+        ORDER BY table_name, ordinal_position`
+    );
+    const schemas = {};
+    for (const r of rows) {
+      (schemas[r.table_name] ??= []).push({
+        name: r.column_name,
+        type: r.data_type,
+        nullable: r.is_nullable === "YES",
+      });
+    }
+    res.json({ db_name: dataSource, tables: Object.keys(schemas), schemas });
+  } catch (err) {
+    res.status(400).json({ error: safeErrorMessage(err) });
+  }
+});
+
 // /preview must be before /:id
 router.post("/preview", requireAdmin, async (req, res) => {
   const { data_source, sql, range } = req.body || {};
