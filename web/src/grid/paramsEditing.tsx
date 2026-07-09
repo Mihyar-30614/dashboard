@@ -23,6 +23,12 @@ export function editableFields(schema: ParamField[]): ParamField[] {
   return schema.filter((f) => f.name !== "widget_id");
 }
 
+// range follows the page-level picker unless explicitly pinned here, so it
+// gets a "page default" option and no schema-default backfill.
+function followsPage(f: ParamField) {
+  return f.name === "range" && f.type === "enum";
+}
+
 export function ParamsPopover({
   schema,
   params,
@@ -38,7 +44,9 @@ export function ParamsPopover({
   const [draft, setDraft] = useState<Record<string, unknown>>(() => {
     const d: Record<string, unknown> = { ...params };
     for (const f of fields) {
-      if (d[f.name] === undefined && f.default !== undefined) d[f.name] = f.default;
+      if (d[f.name] === undefined && f.default !== undefined && !followsPage(f)) {
+        d[f.name] = f.default;
+      }
     }
     return d;
   });
@@ -86,6 +94,7 @@ export function ParamsPopover({
               value={String(draft[f.name] ?? "")}
               onChange={(e) => set(f.name, e.target.value)}
             >
+              {followsPage(f) && <option value="">page default</option>}
               {(f.values ?? []).map((v) => (
                 <option key={v} value={v}>{v}</option>
               ))}
@@ -106,7 +115,8 @@ export function ParamsPopover({
           onClick={() => {
             const out = { ...draft };
             for (const f of fields) {
-              if (f.type === "number" && out[f.name] !== undefined && out[f.name] !== "") {
+              if (out[f.name] === "") delete out[f.name];
+              else if (f.type === "number" && out[f.name] !== undefined) {
                 out[f.name] = Number(out[f.name]);
               }
             }

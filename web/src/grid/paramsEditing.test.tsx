@@ -32,7 +32,19 @@ describe("ParamsPopover", () => {
     expect(select.value).toBe("7d");
   });
 
-  it("falls back to the schema default when the param is unset", () => {
+  it("falls back to the schema default for non-range fields", () => {
+    render(
+      <ParamsPopover
+        schema={[{ name: "chart_type", type: "enum", values: ["line", "bar"], default: "line" }]}
+        params={{}}
+        onSave={() => {}}
+        onClose={() => {}}
+      />,
+    );
+    expect((screen.getByLabelText("chart_type") as HTMLSelectElement).value).toBe("line");
+  });
+
+  it("shows page default for an unset range", () => {
     render(
       <ParamsPopover
         schema={[RANGE_FIELD]}
@@ -41,7 +53,7 @@ describe("ParamsPopover", () => {
         onClose={() => {}}
       />,
     );
-    expect((screen.getByLabelText("range") as HTMLSelectElement).value).toBe("30d");
+    expect((screen.getByLabelText("range") as HTMLSelectElement).value).toBe("");
   });
 
   it("applies edited values", () => {
@@ -58,6 +70,23 @@ describe("ParamsPopover", () => {
     fireEvent.change(screen.getByLabelText("key"), { target: { value: "arr" } });
     fireEvent.click(screen.getByText("Apply"));
     expect(onSave).toHaveBeenCalledWith({ range: "90d", key: "arr" });
+  });
+});
+
+describe("ParamsPopover range unpinning", () => {
+  it("offers a page-default option for range and drops the key on save", () => {
+    const onSave = vi.fn();
+    render(
+      <ParamsPopover
+        schema={[RANGE_FIELD]}
+        params={{ range: "90d" }}
+        onSave={onSave}
+        onClose={() => {}}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("range"), { target: { value: "" } });
+    fireEvent.click(screen.getByText("Apply"));
+    expect(onSave).toHaveBeenCalledWith({});
   });
 });
 

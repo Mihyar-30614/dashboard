@@ -20,6 +20,17 @@ export function sqlDefaultSize(viz?: string): { w: number; h: number } {
   return { w: 3, h: 2 };
 }
 
+export const PAGE_RANGES = ["7d", "30d", "90d"] as const;
+
+export function effectiveParams(
+  params: Record<string, unknown> | undefined,
+  pageRange: string,
+): Record<string, unknown> {
+  const p = { ...(params ?? {}) };
+  if (p.range == null || p.range === "") p.range = pageRange;
+  return p;
+}
+
 type Options = {
   screen: string;
   dirtyKey: string;
@@ -43,6 +54,14 @@ export function useLayoutPage({
   const toast = useToast();
   const [local, setLocal] = useState<GridWidget[]>([]);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [pageRange, setPageRange] = useState<string>(() => {
+    if (typeof window === "undefined") return "30d";
+    const stored = window.localStorage.getItem(`range:${screen}`);
+    return stored && (PAGE_RANGES as readonly string[]).includes(stored) ? stored : "30d";
+  });
+  useEffect(() => {
+    window.localStorage.setItem(`range:${screen}`, pageRange);
+  }, [pageRange, screen]);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const timer = useRef<number | null>(null);
@@ -198,7 +217,11 @@ export function useLayoutPage({
             onSave: (params) => updateParams(w.id, params),
           }}
         >
-          <C app={w.app} params={w.params} onRemove={() => remove(w.id)} />
+          <C
+            app={w.app}
+            params={effectiveParams(w.params, pageRange)}
+            onRemove={() => remove(w.id)}
+          />
         </ParamsEditingContext.Provider>
       </WidgetErrorBoundary>
     );
@@ -224,6 +247,30 @@ export function useLayoutPage({
   const toolbar = (
     <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
       <SaveBadge state={saveState} lastSavedAt={lastSavedAt} />
+      <div
+        role="group"
+        aria-label="Time range"
+        style={{ display: "inline-flex", gap: 2 }}
+      >
+        {PAGE_RANGES.map((r) => (
+          <button
+            key={r}
+            type="button"
+            onClick={() => setPageRange(r)}
+            aria-pressed={pageRange === r}
+            style={{
+              padding: "4px 8px",
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              opacity: pageRange === r ? 1 : 0.5,
+            }}
+          >
+            {r}
+          </button>
+        ))}
+      </div>
       <button type="button" onClick={() => setPaletteOpen(true)}>
         + Add widget
       </button>
