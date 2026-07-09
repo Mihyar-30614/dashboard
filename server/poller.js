@@ -6,6 +6,7 @@ import * as pgActivity from "./collectors/pgActivity.js";
 import { runKpi } from "./collectors/pgKpi.js";
 import { snapshot as pm2Snapshot } from "./collectors/pm2.js";
 import { checkHealth } from "./collectors/health.js";
+import { handleHealthSample } from "./alerts.js";
 
 const TICK_MS = 30_000;
 const TRIM_INTERVAL_MS = 24 * 60 * 60 * 1000;
@@ -37,7 +38,10 @@ async function pollApp(app) {
       .then((v) => persistSample(app.slug, "dau", v))
       .catch((e) => errors.push({ k: "dau", m: e.message })),
     checkHealth(app.health_url)
-      .then((h) => persistSample(app.slug, "health_ok", h.ok ? 1 : 0))
+      .then(async (h) => {
+        await persistSample(app.slug, "health_ok", h.ok ? 1 : 0);
+        await handleHealthSample(app.slug, h.ok);
+      })
       .catch((e) => errors.push({ k: "health", m: e.message })),
     ...(app.kpis || []).map((kpi) =>
       runKpi(pool, kpi)

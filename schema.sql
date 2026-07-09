@@ -78,6 +78,13 @@ CREATE TABLE sql_widgets (
 
 CREATE INDEX idx_sql_widgets_source ON sql_widgets (data_source);
 
+-- Last known health-alert status per app so restarts don't re-alert.
+CREATE TABLE alert_state (
+  app_slug   text PRIMARY KEY,
+  status     text NOT NULL,
+  changed_at timestamptz NOT NULL DEFAULT now()
+);
+
 -- Ledger of applied migrations (kept for compatibility with earlier installs).
 CREATE TABLE schema_migrations (
   filename   text PRIMARY KEY,
