@@ -10,14 +10,18 @@ const APP_CFG = {
 };
 
 let pool;
-beforeAll(() => {
+beforeAll(async () => {
   pool = new pg.Pool({
     host: process.env.DB_HOST || 'localhost',
     port: Number(process.env.DB_PORT || 5432),
     user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD,
-    database: 'sportly_fixture'
+    database: process.env.DB_NAME || 'dashboard_test'
   });
+  // Stand-in for an app DB table the configured DAU/timeseries SQL reads.
+  await pool.query(
+    'CREATE TABLE IF NOT EXISTS refresh_tokens (user_id int, last_used_at timestamptz)'
+  );
 });
 afterAll(() => pool.end());
 
