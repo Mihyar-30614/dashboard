@@ -136,6 +136,24 @@ describe('inferViz', () => {
       rows: [{ t: '2026-05-01', value: 1 }, { t: '2026-05-02', value: 2 }]
     })).toBe('line');
   });
+  it('returns line when first column is a date string', () => {
+    expect(inferViz({
+      columns: ['day', 'signups'],
+      rows: [{ day: '2026-05-01', signups: 3 }, { day: '2026-05-02', signups: 5 }]
+    })).toBe('line');
+  });
+  it('returns line when first column is a Date', () => {
+    expect(inferViz({
+      columns: ['created_at', 'count'],
+      rows: [{ created_at: new Date('2026-05-01'), count: 1 }]
+    })).toBe('line');
+  });
+  it('does not treat text + numeric as line', () => {
+    expect(inferViz({
+      columns: ['plan', 'count'],
+      rows: [{ plan: 'free', count: 10 }, { plan: 'pro', count: 4 }]
+    })).toBe('bar');
+  });
   it('returns bar for text + numeric', () => {
     expect(inferViz({
       columns: ['label', 'count'],

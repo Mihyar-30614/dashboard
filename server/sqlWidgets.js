@@ -23,6 +23,10 @@ export function rewriteSql(sql, range) {
   return { text, days, values };
 }
 
+function isTemporal(v) {
+  return v instanceof Date || (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v));
+}
+
 export function inferViz({ columns, rows }) {
   if (columns.length === 0 || rows.length === 0) return 'table';
   const sample = rows[0];
@@ -34,7 +38,7 @@ export function inferViz({ columns, rows }) {
     }
   }
 
-  if (columns[0] === 't' && columns.length >= 2) {
+  if (columns.length >= 2 && (columns[0] === 't' || isTemporal(sample[columns[0]]))) {
     return 'line';
   }
 
