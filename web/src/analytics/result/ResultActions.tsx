@@ -17,7 +17,7 @@ export default function ResultActions({
   onSave: (body: SavedQueryRequest) => Promise<number>;
   onToast: (msg: string, kind?: "ok" | "err") => void;
 }) {
-  const [showForm, setShowForm] = useState(false);
+  const [panel, setPanel] = useState<"save" | "dashboard" | null>(null);
   const [name, setName] = useState(qa.question.slice(0, 80));
   const [tags, setTags] = useState("");
   const [isPublic, setIsPublic] = useState(false);
@@ -80,7 +80,7 @@ export default function ResultActions({
         is_public: isPublic,
       });
       onToast("Saved", "ok");
-      setShowForm(false);
+      setPanel(null);
     } catch (err) {
       onToast("Save failed: " + ((err as Error).message ?? "unknown"), "err");
     } finally {
@@ -92,11 +92,11 @@ export default function ResultActions({
     <>
       <button
         type="button"
-        onClick={() => setShowForm((v) => !v)}
+        onClick={() => setPanel((p) => (p === "save" ? null : "save"))}
         disabled={!qa.sql}
-        title={qa.sql ? "Pin / save" : "No SQL to save"}
+        title={qa.sql ? "Save to your query list" : "No SQL to save"}
       >
-        ★ pin
+        ★ save
       </button>
       <button type="button" onClick={copy} disabled={!canCopy}>
         copy
@@ -104,37 +104,47 @@ export default function ResultActions({
       <button type="button" onClick={download} disabled={!canCsv}>
         ⬇ csv
       </button>
-      <PinToDashboard qa={qa} dbName={dbName} onToast={onToast} />
-      {showForm && (
-        <form
-          className="an-save-form"
-          style={{ gridColumn: "1 / -1", marginTop: 10 }}
-          onSubmit={save}
-        >
+      <PinToDashboard
+        qa={qa}
+        dbName={dbName}
+        onToast={onToast}
+        open={panel === "dashboard"}
+        onToggle={() => setPanel((p) => (p === "dashboard" ? null : "dashboard"))}
+      />
+      {panel === "save" && (
+        <form className="an-action-pop" onSubmit={save}>
+          <span className="an-action-pop__eyebrow">save query</span>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="name"
+            aria-label="Query name"
             required
           />
           <input
             type="text"
             value={tags}
             onChange={(e) => setTags(e.target.value)}
-            placeholder="tags (comma)"
+            placeholder="tags (comma separated)"
+            aria-label="Tags"
           />
-          <button type="submit" disabled={saving || !name.trim()}>
-            {saving ? "…" : "save"}
-          </button>
           <label className="an-save-form__row">
             <input
               type="checkbox"
               checked={isPublic}
               onChange={(e) => setIsPublic(e.target.checked)}
             />
-            public
+            visible to everyone
           </label>
+          <div className="an-action-pop__row">
+            <button type="button" onClick={() => setPanel(null)}>
+              Cancel
+            </button>
+            <button type="submit" disabled={saving || !name.trim()}>
+              {saving ? "Saving..." : "Save query"}
+            </button>
+          </div>
         </form>
       )}
     </>

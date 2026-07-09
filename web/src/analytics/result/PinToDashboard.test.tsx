@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { useState } from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import PinToDashboard from "./PinToDashboard";
@@ -21,6 +22,19 @@ function renderWithClient(ui: React.ReactElement) {
   return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
 }
 
+function Harness({ qa, dbName, onToast }: { qa: QA; dbName: string; onToast: (m: string, k?: "ok" | "err") => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <PinToDashboard
+      qa={qa}
+      dbName={dbName}
+      onToast={onToast}
+      open={open}
+      onToggle={() => setOpen((v) => !v)}
+    />
+  );
+}
+
 function mockGets({ admin }: { admin: boolean }) {
   (api.get as ReturnType<typeof vi.fn>).mockImplementation((path: string) => {
     if (path === "/api/auth/me") {
@@ -41,7 +55,7 @@ describe("PinToDashboard", () => {
 
   it("renders nothing for non-admins", async () => {
     mockGets({ admin: false });
-    renderWithClient(<PinToDashboard qa={QA_FIXTURE} dbName="sportly" onToast={() => {}} />);
+    renderWithClient(<Harness qa={QA_FIXTURE} dbName="sportly" onToast={() => {}} />);
     await waitFor(() => expect(api.get).toHaveBeenCalled());
     expect(screen.queryByText("+ dashboard")).toBeNull();
   });
@@ -49,7 +63,7 @@ describe("PinToDashboard", () => {
   it("renders nothing when the answer has no SQL", async () => {
     mockGets({ admin: true });
     renderWithClient(
-      <PinToDashboard qa={{ ...QA_FIXTURE, sql: null }} dbName="sportly" onToast={() => {}} />,
+      <Harness qa={{ ...QA_FIXTURE, sql: null }} dbName="sportly" onToast={() => {}} />,
     );
     await waitFor(() => expect(api.get).toHaveBeenCalled());
     expect(screen.queryByText("+ dashboard")).toBeNull();
@@ -67,10 +81,10 @@ describe("PinToDashboard", () => {
       return Promise.reject(new Error("unexpected " + path));
     });
     const onToast = vi.fn();
-    renderWithClient(<PinToDashboard qa={QA_FIXTURE} dbName="sportly" onToast={onToast} />);
+    renderWithClient(<Harness qa={QA_FIXTURE} dbName="sportly" onToast={onToast} />);
 
     fireEvent.click(await screen.findByText("+ dashboard"));
-    fireEvent.click(screen.getByText("Add"));
+    fireEvent.click(screen.getByText("Add widget"));
 
     await waitFor(() => expect(onToast).toHaveBeenCalledWith(expect.stringMatching(/added/i), "ok"));
     expect(api.post).toHaveBeenCalledWith(

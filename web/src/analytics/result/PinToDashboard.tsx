@@ -15,17 +15,20 @@ export default function PinToDashboard({
   qa,
   dbName,
   onToast,
+  open,
+  onToggle,
 }: {
   qa: QA;
   dbName: string;
   onToast: (msg: string, kind?: "ok" | "err") => void;
+  open: boolean;
+  onToggle: () => void;
 }) {
   const me = useMe();
   const sources = useSqlDataSources();
   const preview = useSqlPreview();
   const create = useCreateSqlWidget();
 
-  const [open, setOpen] = useState(false);
   const [name, setName] = useState(qa.question.slice(0, 80));
   const sourceNames = (sources.data ?? []).map((s) => s.name);
   const [source, setSource] = useState<string | null>(null);
@@ -56,7 +59,7 @@ export default function PinToDashboard({
         options: {},
       });
       onToast("Added to dashboard widgets", "ok");
-      setOpen(false);
+      onToggle();
     } catch (err) {
       onToast("Add failed: " + ((err as Error).message ?? "unknown"), "err");
     } finally {
@@ -66,19 +69,19 @@ export default function PinToDashboard({
 
   return (
     <>
-      <button type="button" onClick={() => setOpen((v) => !v)} title="Save as dashboard widget">
+      <button type="button" onClick={onToggle} title="Save as dashboard widget">
         + dashboard
       </button>
       {open && (
-        <form
-          onSubmit={add}
-          style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}
-        >
+        <form className="an-action-pop" onSubmit={add}>
+          <span className="an-action-pop__eyebrow">add to dashboard</span>
           <input
+            type="text"
             aria-label="Widget name"
+            placeholder="widget name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            style={{ minWidth: 180 }}
+            required
           />
           <select
             aria-label="Data source"
@@ -89,9 +92,14 @@ export default function PinToDashboard({
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
-          <button type="submit" disabled={busy || !name.trim() || !selected}>
-            {busy ? "Adding..." : "Add"}
-          </button>
+          <div className="an-action-pop__row">
+            <button type="button" onClick={onToggle}>
+              Cancel
+            </button>
+            <button type="submit" disabled={busy || !name.trim() || !selected}>
+              {busy ? "Adding..." : "Add widget"}
+            </button>
+          </div>
         </form>
       )}
     </>
