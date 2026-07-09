@@ -31,15 +31,18 @@ export default function ConfirmDialog({
     <>
       <div
         data-testid="confirm-backdrop"
-        onClick={onCancel}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onCancel();
+        }}
         style={{
           position: "fixed",
           inset: 0,
           background: "color-mix(in srgb, var(--ink) 35%, transparent)",
-          zIndex: 49,
-          animation: "fadeUp 160ms ease-out both",
+          zIndex: 50,
+          display: "grid",
+          placeItems: "center",
         }}
-      />
+      >
       <div
         role="dialog"
         aria-modal="true"
@@ -48,11 +51,6 @@ export default function ConfirmDialog({
           if (e.key === "Escape") onCancel();
         }}
         style={{
-          position: "fixed",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          zIndex: 50,
           width: "min(360px, calc(100vw - 48px))",
           padding: 20,
           background: "var(--panel)",
@@ -79,6 +77,7 @@ export default function ConfirmDialog({
             {confirmLabel}
           </button>
         </div>
+      </div>
       </div>
     </>
   );

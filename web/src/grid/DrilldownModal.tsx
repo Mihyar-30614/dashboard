@@ -27,15 +27,18 @@ export default function DrilldownModal({
     <>
       <div
         data-testid="drilldown-backdrop"
-        onClick={onClose}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onClose();
+        }}
         style={{
           position: "fixed",
           inset: 0,
           background: "color-mix(in srgb, var(--ink) 40%, transparent)",
-          zIndex: 39,
-          animation: "fadeUp 160ms ease-out both",
+          zIndex: 40,
+          display: "grid",
+          placeItems: "center",
         }}
-      />
+      >
       <div
         role="dialog"
         aria-modal="true"
@@ -44,11 +47,6 @@ export default function DrilldownModal({
           if (e.key === "Escape") onClose();
         }}
         style={{
-          position: "fixed",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          zIndex: 40,
           width: "min(1100px, 92vw)",
           height: "min(700px, 84vh)",
           background: "var(--bg)",
@@ -136,6 +134,7 @@ export default function DrilldownModal({
             </pre>
           </details>
         )}
+      </div>
       </div>
     </>
   );
