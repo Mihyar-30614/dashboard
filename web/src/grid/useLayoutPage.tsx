@@ -8,6 +8,7 @@ import { useSqlWidgets, useSqlDataSources } from "../api/sqlWidgets";
 import SaveBadge, { type SaveState } from "./SaveBadge";
 import EmptyLayout from "./EmptyLayout";
 import { setPageDirty } from "./savingRegistry";
+import { ParamsEditingContext } from "./paramsEditing";
 import { useToast } from "../ui/Toast";
 import WidgetErrorBoundary from "./WidgetErrorBoundary";
 
@@ -89,6 +90,12 @@ export function useLayoutPage({
 
   function remove(id: string) {
     const next = local.filter((w) => w.id !== id);
+    setLocal(next);
+    scheduleSave(next);
+  }
+
+  function updateParams(id: string, params: Record<string, unknown>) {
+    const next = local.map((w) => (w.id === id ? { ...w, params } : w));
     setLocal(next);
     scheduleSave(next);
   }
@@ -184,7 +191,15 @@ export function useLayoutPage({
         kind={w.kind}
         onRemove={() => remove(w.id)}
       >
-        <C app={w.app} params={w.params} onRemove={() => remove(w.id)} />
+        <ParamsEditingContext.Provider
+          value={{
+            schema: def.paramsSchema,
+            params: w.params ?? {},
+            onSave: (params) => updateParams(w.id, params),
+          }}
+        >
+          <C app={w.app} params={w.params} onRemove={() => remove(w.id)} />
+        </ParamsEditingContext.Provider>
       </WidgetErrorBoundary>
     );
   }

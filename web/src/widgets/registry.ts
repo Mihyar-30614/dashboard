@@ -1,5 +1,6 @@
 import type { FC } from "react";
 import widgetsMeta from "@config/widgets.json";
+import type { ParamField } from "../grid/paramsEditing";
 import SqlWidget from "./SqlWidget";
 import UsersTotal from "./UsersTotal";
 import DauCard from "./DauCard";
@@ -24,6 +25,7 @@ export type WidgetDef = {
   description: string;
   defaultSize: { w: number; h: number };
   scope: "app" | "overview" | "both";
+  paramsSchema: ParamField[];
   Component: FC<any>;
 };
 
@@ -54,6 +56,7 @@ export const WIDGETS: Record<string, WidgetDef> = Object.fromEntries(
       description: w.description,
       defaultSize: w.defaultSize,
       scope: w.scope as WidgetDef["scope"],
+      paramsSchema: (w.paramsSchema ?? []) as ParamField[],
       Component: COMPONENTS[w.kind],
     },
   ]),

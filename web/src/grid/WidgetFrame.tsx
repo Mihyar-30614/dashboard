@@ -1,5 +1,6 @@
-import React from "react";
-import { X } from "lucide-react";
+import React, { useContext, useState } from "react";
+import { Settings2, X } from "lucide-react";
+import { ParamsEditingContext, ParamsPopover, editableFields } from "./paramsEditing";
 
 type Props = {
   title: string;
@@ -18,6 +19,9 @@ export default function WidgetFrame({
   meta,
   children,
 }: Props) {
+  const editing = useContext(ParamsEditingContext);
+  const fields = editing ? editableFields(editing.schema) : [];
+  const [settingsOpen, setSettingsOpen] = useState(false);
   return (
     <div
       className="panel fade-up"
@@ -26,6 +30,7 @@ export default function WidgetFrame({
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
+        position: "relative",
       }}
     >
       <div
@@ -74,6 +79,25 @@ export default function WidgetFrame({
             </span>
           )}
           {stale && <span style={{ color: "var(--muted)" }}>stale</span>}
+          {editing && fields.length > 0 && (
+            <button
+              type="button"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={() => setSettingsOpen((o) => !o)}
+              title="Widget settings"
+              aria-label="Widget settings"
+              style={{
+                width: 22,
+                height: 22,
+                padding: 0,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Settings2 size={12} strokeWidth={1.8} />
+            </button>
+          )}
           {onRemove && (
             <button
               type="button"
@@ -95,6 +119,14 @@ export default function WidgetFrame({
           )}
         </div>
       </div>
+      {settingsOpen && editing && (
+        <ParamsPopover
+          schema={editing.schema}
+          params={editing.params}
+          onSave={editing.onSave}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
       <div style={{ flex: 1, minHeight: 0 }}>{children}</div>
     </div>
   );
