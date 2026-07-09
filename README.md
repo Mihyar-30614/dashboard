@@ -23,7 +23,7 @@ Self-hosted operations dashboard that aggregates metrics from monitored applicat
 ## Prerequisites
 
 - Node.js compatible with dependencies (current setup targets recent LTS, e.g. 20.x).
-- A **dashboard** Postgres database (credentials in `.env`) for sessions, layouts, metric history, invites, SQL widget definitions, etc.
+- A **dashboard** Postgres database (credentials in `.env`) for sessions, layouts, metric history, invites, SQL widget definitions, etc. Create it from the committed snapshot: `createdb dashboard && psql dashboard < schema.sql` (regenerate `schema.sql` after schema changes — see its header).
 - Access to monitored app databases plus, if enabled, **`pm2`** and nginx log directories on the host (paths configurable).
 
 ## Getting started
