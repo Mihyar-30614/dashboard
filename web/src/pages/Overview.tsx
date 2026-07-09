@@ -39,7 +39,7 @@ export default function Overview() {
             gap: 22,
             padding: "16px 22px",
             border: "1px solid var(--rule)",
-            borderRadius: 8,
+            borderRadius: "var(--radius)",
             background: "var(--panel)",
           }}
         >

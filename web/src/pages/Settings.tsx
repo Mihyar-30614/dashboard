@@ -165,7 +165,7 @@ export default function Settings() {
               padding: "12px 14px",
               border: "1px solid color-mix(in srgb, var(--accent) 40%, var(--rule))",
               background: "color-mix(in srgb, var(--accent) 8%, transparent)",
-              borderRadius: 6,
+              borderRadius: "var(--radius)",
               display: "flex",
               alignItems: "center",
               gap: 12,
@@ -267,7 +267,7 @@ export default function Settings() {
                     gap: 14,
                     padding: "10px 12px",
                     border: "1px solid var(--rule)",
-                    borderRadius: 6,
+                    borderRadius: "var(--radius)",
                     background: "var(--bg-elev)",
                   }}
                 >

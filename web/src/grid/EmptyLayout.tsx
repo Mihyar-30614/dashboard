@@ -15,7 +15,7 @@ export default function EmptyLayout({
         gap: 14,
         padding: "60px 24px",
         border: "1px dashed var(--rule)",
-        borderRadius: 10,
+        borderRadius: "var(--radius-lg)",
         background: "var(--panel)",
         textAlign: "center",
       }}
@@ -63,7 +63,7 @@ export default function EmptyLayout({
           background: "var(--accent)",
           color: "var(--accent-ink, #fff)",
           border: "none",
-          borderRadius: 6,
+          borderRadius: "var(--radius)",
           fontFamily: "var(--font-mono)",
           fontSize: 11,
           letterSpacing: "0.18em",

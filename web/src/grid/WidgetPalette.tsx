@@ -61,7 +61,7 @@ export default function WidgetPalette({
           padding: 24,
           zIndex: 20,
           overflowY: "auto",
-          boxShadow: "-24px 0 60px -24px rgba(0,0,0,0.25)",
+          boxShadow: "var(--shadow-md)",
           animation: "fadeUp 240ms ease-out both",
         }}
       >

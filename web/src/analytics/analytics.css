@@ -30,7 +30,7 @@
   background: var(--panel);
   color: var(--text);
   border: 1px solid var(--rule);
-  border-radius: 4px;
+  border-radius: var(--radius);
   padding: 6px 10px;
   font-family: var(--font-mono);
   font-size: 12px;
@@ -121,7 +121,7 @@
   flex-direction: column;
   gap: 12px;
   border: 1px solid var(--rule);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   background: var(--panel);
   padding: 12px;
   min-height: 0;
@@ -160,7 +160,7 @@
   padding: 6px 8px;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: var(--radius);
   color: var(--ink-soft);
   font-size: 13px;
   text-align: left;
@@ -219,7 +219,7 @@
   background: var(--bg-elev);
   color: var(--text);
   border: 1px solid var(--rule);
-  border-radius: 6px;
+  border-radius: var(--radius);
   font-family: var(--font-ui);
   font-size: 14px;
   line-height: 1.4;
@@ -249,7 +249,7 @@
   border: none;
   text-align: left;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--radius);
 }
 .an-schema__col:hover {
   color: var(--text);
@@ -268,7 +268,7 @@
   flex-direction: column;
   gap: 14px;
   border: 1px solid var(--rule);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   background: var(--panel);
   padding: 18px;
   min-height: 0;
@@ -363,14 +363,14 @@
   right: 0;
   z-index: 30;
   width: 320px;
-  padding: 14px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
   background: var(--panel);
-  border: 1px solid var(--rule);
-  border-radius: 8px;
-  box-shadow: 0 18px 44px -20px rgba(0, 0, 0, 0.45);
+  border: 1px solid color-mix(in srgb, var(--rule) 70%, transparent);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
 }
 .an-action-pop__eyebrow {
   font-family: var(--font-mono);
@@ -416,7 +416,7 @@
   color: var(--bad);
   background: color-mix(in srgb, var(--bad) 8%, transparent);
   border: 1px solid color-mix(in srgb, var(--bad) 30%, transparent);
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 10px 14px;
   font-family: var(--font-mono);
   font-size: 12px;
@@ -465,7 +465,7 @@
   padding: 12px;
   background: color-mix(in srgb, var(--text) 4%, transparent);
   border: 1px solid var(--rule);
-  border-radius: 6px;
+  border-radius: var(--radius);
   font-family: var(--font-mono);
   font-size: 12px;
   overflow-x: auto;
@@ -482,7 +482,7 @@
   font-size: 12px;
   background: color-mix(in srgb, var(--text) 4%, transparent);
   border: 1px solid var(--rule);
-  border-radius: 6px;
+  border-radius: var(--radius);
   overflow: auto;
 }
 
@@ -511,7 +511,7 @@
   background: transparent;
   color: var(--muted);
   border: 1px solid var(--rule);
-  border-radius: 4px;
+  border-radius: var(--radius);
   cursor: pointer;
   transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
 }
@@ -559,7 +559,7 @@
   align-items: center;
   padding: 10px;
   border: 1px solid var(--rule);
-  border-radius: 6px;
+  border-radius: var(--radius);
   background: var(--bg-elev);
 }
 .an-save-form input[type="text"] {
@@ -587,7 +587,7 @@
 }
 .an-skeleton__bar {
   height: 14px;
-  border-radius: 4px;
+  border-radius: var(--radius);
 }
 
 /* === Narrow viewport: rail becomes drawer === */

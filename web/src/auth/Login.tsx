@@ -139,7 +139,7 @@ export default function Login() {
                 marginTop: 14,
                 padding: "10px 12px",
                 border: "1px solid var(--bad)",
-                borderRadius: 4,
+                borderRadius: "var(--radius)",
                 color: "var(--bad)",
                 fontFamily: "var(--font-mono)",
                 fontSize: 12,

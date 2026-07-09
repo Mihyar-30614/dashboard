@@ -173,7 +173,7 @@ export default function Sidebar() {
             justifyContent: "center",
             background: "transparent",
             border: "1px solid var(--rule)",
-            borderRadius: 4,
+            borderRadius: "var(--radius)",
             color: "var(--muted)",
             cursor: "pointer",
           }}
@@ -218,16 +218,13 @@ export default function Sidebar() {
                   alignItems: "center",
                   justifyContent: collapsed ? "center" : "flex-start",
                   gap: 10,
-                  padding: collapsed ? "9px 0" : "9px 10px",
-                  borderRadius: 4,
+                  padding: collapsed ? "9px 0" : "9px 12px",
+                  borderRadius: 999,
                   textDecoration: "none",
                   color: isActive ? "var(--text)" : "var(--ink-soft)",
                   background: isActive
                     ? "color-mix(in srgb, var(--accent) 12%, transparent)"
                     : "transparent",
-                  borderLeft: `2px solid ${
-                    isActive ? "var(--accent)" : "transparent"
-                  }`,
                   fontWeight: isActive ? 600 : 400,
                   transition: "background 120ms, color 120ms",
                 })}
