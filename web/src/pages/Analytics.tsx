@@ -172,6 +172,47 @@ export default function Analytics() {
     [db, useCtx, conv],
   );
 
+  // Turns restored from the server conversation carry no result rows, so a
+  // history pick re-runs the question (seer's query cache keeps this cheap).
+  const revive = useCallback(
+    async (qa: QA) => {
+      if (!db) return;
+      setPendingId(qa.id);
+      try {
+        const r: QueryResult = await llm.query(db, qa.question, useCtx);
+        conv.setHistory((h) =>
+          h.map((x) =>
+            x.id === qa.id
+              ? {
+                  ...x,
+                  answer: r.answer || x.answer,
+                  sql: r.sql ?? x.sql,
+                  data: r.data ?? [],
+                  count: r.count ?? 0,
+                  warnings: r.validation_warnings ?? null,
+                  related: r.related_questions ?? null,
+                  query_id: r.query_id ?? null,
+                  error: r.error ?? null,
+                  defaultTab: pickTab(r.data ?? []),
+                }
+              : x,
+          ),
+        );
+      } catch (e) {
+        conv.setHistory((h) =>
+          h.map((x) =>
+            x.id === qa.id
+              ? { ...x, error: String((e as Error)?.message ?? e) }
+              : x,
+          ),
+        );
+      } finally {
+        setPendingId(null);
+      }
+    },
+    [db, useCtx, conv],
+  );
+
   const executeSaved = useCallback(
     async (sq: SavedQuery) => {
       if (!db) return;
@@ -354,6 +395,10 @@ export default function Analytics() {
                 onPick={(id) => {
                   setActiveId(id);
                   setActiveTab(null);
+                  const qa = conv.history.find((q) => q.id === id);
+                  if (qa && qa.sql && qa.data.length === 0 && !qa.error) {
+                    revive(qa);
+                  }
                 }}
               />
             </RailSection>
