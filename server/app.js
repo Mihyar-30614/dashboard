@@ -25,6 +25,9 @@ if (process.env.NODE_ENV === "test") {
 export function buildApp() {
   const app = express();
   app.disable("x-powered-by");
+  // One trusted hop (nginx) so req.ip and the login rate limiter see the
+  // real client address instead of the proxy's.
+  app.set("trust proxy", 1);
   app.use(express.json({ limit: "1mb" }));
   app.use(cookieParser());
   if (process.env.NODE_ENV !== "test") {

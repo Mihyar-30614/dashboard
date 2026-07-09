@@ -24,6 +24,17 @@ describe('POST /api/auth/login', () => {
       .send({ email: 'admin@example.com', password: 'wrong' });
     expect(res.status).toBe(401);
   });
+
+  it('trusts the nginx proxy hop so limiter keys by client IP', async () => {
+    // Behind nginx, req.ip must come from X-Forwarded-For or the login
+    // limiter throttles every user under the proxy's address.
+    expect(app.get('trust proxy')).toBe(1);
+    const res = await request(app)
+      .post('/api/auth/login')
+      .set('X-Forwarded-For', '203.0.113.7')
+      .send({ email: 'admin@example.com', password: 'wrong' });
+    expect(res.status).toBe(401);
+  });
 });
 
 describe('GET /api/auth/me', () => {
