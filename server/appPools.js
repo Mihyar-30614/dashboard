@@ -19,12 +19,3 @@ export function getAppPool(slug) {
   pools.set(slug, pool);
   return pool;
 }
-
-export function listAppSlugs() {
-  return Object.keys(loadApps());
-}
-
-export async function closeAllPools() {
-  for (const p of pools.values()) await p.end();
-  pools.clear();
-}

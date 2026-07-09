@@ -64,7 +64,7 @@ export async function loadSession(id) {
   return row;
 }
 
-export async function rotateIfStale(id) {
+async function rotateIfStale(id) {
   const row = await loadSession(id);
   if (!row) return null;
   const ageMs = Date.now() - new Date(row.created_at).getTime();

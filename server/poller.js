@@ -12,7 +12,7 @@ const TRIM_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const TRIM_INITIAL_DELAY_MS = 5 * 60 * 1000;
 const SAMPLE_RETENTION_DAYS = 90;
 
-let timer, trimTimer;
+let timer;
 let lastTick = { startedAt: null, ms: null, errors: [] };
 
 async function persistSample(slug, metric, value) {
@@ -77,17 +77,10 @@ export function startPoller() {
   if (timer) return;
   runTick();
   timer = setInterval(runTick, TICK_MS);
-  trimTimer = setTimeout(function tick() {
+  setTimeout(function tick() {
     trimOld().catch((e) => console.error("trim_failed", e));
-    trimTimer = setTimeout(tick, TRIM_INTERVAL_MS);
+    setTimeout(tick, TRIM_INTERVAL_MS);
   }, TRIM_INITIAL_DELAY_MS);
-}
-
-export function stopPoller() {
-  clearInterval(timer);
-  timer = undefined;
-  clearTimeout(trimTimer);
-  trimTimer = undefined;
 }
 
 export function getLastTick() {

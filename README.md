@@ -18,7 +18,7 @@ Self-hosted operations dashboard that aggregates metrics from monitored applicat
 - **`config/apps.json`** — Per-app labels, DB connection info, metric SQL snippets, HTTP health URLs, PM2 names, nginx log paths.
 - **`config/widgets.json`** — Shared widget catalog (kinds, sizes, scopes); used by server validation and the web registry.
 - **`config/data_sources.json`** — Read-only Postgres roles used by SQL widgets (passwords separate — see Configuration).
-- **`scripts/`** — `migrate.js`, `seed-admin.js`, shell helpers (`backup.sh`, `grant-readers.sh`).
+- **`scripts/`** — `seed-admin.js`, shell helpers (`backup.sh`, `grant-readers.sh`).
 
 ## Prerequisites
 
@@ -93,7 +93,6 @@ Runs Vitest in `server` and `web`. Playwright is available in `web` for E2E work
 | `npm run dev:all` | API + Vite via `concurrently` |
 | `npm run build` | Production web build |
 | `npm start` | Production API + static `web-prod` |
-| `npm run migrate` | Apply `migrations/*.sql` |
 | `npm run seed:admin` | Bootstrap admin user (see script / env) |
 
 Automate syncing **`web/dist`** into **`web-prod/`** with whatever fits your hosts (cron, systemd, etc.).
