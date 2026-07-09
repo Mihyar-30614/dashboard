@@ -9,6 +9,8 @@ import SaveBadge, { type SaveState } from "./SaveBadge";
 import EmptyLayout from "./EmptyLayout";
 import { setPageDirty } from "./savingRegistry";
 import { ParamsEditingContext } from "./paramsEditing";
+import { ExpandContext } from "./expandContext";
+import DrilldownModal from "./DrilldownModal";
 import { useToast } from "../ui/Toast";
 import WidgetErrorBoundary from "./WidgetErrorBoundary";
 
@@ -54,6 +56,7 @@ export function useLayoutPage({
   const toast = useToast();
   const [local, setLocal] = useState<GridWidget[]>([]);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [expanded, setExpanded] = useState<GridWidget | null>(null);
   const [pageRange, setPageRange] = useState<string>(() => {
     if (typeof window === "undefined") return "30d";
     const stored = window.localStorage.getItem(`range:${screen}`);
@@ -217,20 +220,33 @@ export function useLayoutPage({
             onSave: (params) => updateParams(w.id, params),
           }}
         >
-          <C
-            app={w.app}
-            params={effectiveParams(w.params, pageRange)}
-            onRemove={() => remove(w.id)}
-          />
+          <ExpandContext.Provider value={{ onExpand: () => setExpanded(w) }}>
+            <C
+              app={w.app}
+              params={effectiveParams(w.params, pageRange)}
+              onRemove={() => remove(w.id)}
+            />
+          </ExpandContext.Provider>
         </ParamsEditingContext.Provider>
       </WidgetErrorBoundary>
     );
   }
 
-  const grid = layoutQ.data && local.length === 0 ? (
-    <EmptyLayout scope={paletteScope} onAdd={() => setPaletteOpen(true)} />
-  ) : (
-    <GridCanvas widgets={local} onChange={onChange} renderWidget={renderWidget} />
+  const grid = (
+    <>
+      {layoutQ.data && local.length === 0 ? (
+        <EmptyLayout scope={paletteScope} onAdd={() => setPaletteOpen(true)} />
+      ) : (
+        <GridCanvas widgets={local} onChange={onChange} renderWidget={renderWidget} />
+      )}
+      {expanded && (
+        <DrilldownModal
+          widget={expanded}
+          pageRange={pageRange}
+          onClose={() => setExpanded(null)}
+        />
+      )}
+    </>
   );
 
   const palette = (

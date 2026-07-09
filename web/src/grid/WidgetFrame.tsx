@@ -1,6 +1,7 @@
 import React, { useContext, useState } from "react";
-import { Settings2, X } from "lucide-react";
+import { Maximize2, Settings2, X } from "lucide-react";
 import { ParamsEditingContext, ParamsPopover, editableFields } from "./paramsEditing";
+import { ExpandContext } from "./expandContext";
 
 type Props = {
   title: string;
@@ -20,6 +21,7 @@ export default function WidgetFrame({
   children,
 }: Props) {
   const editing = useContext(ParamsEditingContext);
+  const expand = useContext(ExpandContext);
   const fields = editing ? editableFields(editing.schema) : [];
   const [settingsOpen, setSettingsOpen] = useState(false);
   return (
@@ -79,6 +81,25 @@ export default function WidgetFrame({
             </span>
           )}
           {stale && <span style={{ color: "var(--muted)" }}>stale</span>}
+          {expand && (
+            <button
+              type="button"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={expand.onExpand}
+              title="Expand widget"
+              aria-label="Expand widget"
+              style={{
+                width: 22,
+                height: 22,
+                padding: 0,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Maximize2 size={12} strokeWidth={1.8} />
+            </button>
+          )}
           {editing && fields.length > 0 && (
             <button
               type="button"
