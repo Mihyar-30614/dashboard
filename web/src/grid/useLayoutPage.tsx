@@ -13,6 +13,12 @@ import WidgetErrorBoundary from "./WidgetErrorBoundary";
 
 export type LayoutPageScope = "overview" | "app";
 
+export function sqlDefaultSize(viz?: string): { w: number; h: number } {
+  if (viz === "line" || viz === "bar") return { w: 6, h: 4 };
+  if (viz === "table") return { w: 6, h: 4 };
+  return { w: 3, h: 2 };
+}
+
 type Options = {
   screen: string;
   dirtyKey: string;
@@ -110,7 +116,8 @@ export function useLayoutPage({
     scheduleSave(next);
   }
 
-  function addSql(widget: { id: number }) {
+  function addSql(widget: { id: number; viz?: string }) {
+    const size = sqlDefaultSize(widget.viz);
     const nextY = local.reduce((m, w) => Math.max(m, w.y + w.h), 0);
     const next = [
       ...local,
@@ -120,8 +127,8 @@ export function useLayoutPage({
         app: appSlug,
         x: 0,
         y: nextY,
-        w: 3,
-        h: 2,
+        w: size.w,
+        h: size.h,
         params: { widget_id: widget.id, range: "30d" },
       },
     ];
@@ -142,7 +149,7 @@ export function useLayoutPage({
             key: `sql:${w.id}`,
             label: w.name,
             description: w.description ?? "",
-            defaultSize: { w: 3, h: 2 },
+            defaultSize: sqlDefaultSize(w.viz),
             scope: "overview" as const,
             onPick: () => addSql(w),
           }))
@@ -154,7 +161,7 @@ export function useLayoutPage({
             key: `sql:${w.id}`,
             label: w.name,
             description: w.description ?? "",
-            defaultSize: { w: 3, h: 2 },
+            defaultSize: sqlDefaultSize(w.viz),
             scope: (src?.scope ?? "app") as "app" | "overview",
             appSlug: src?.app_slug,
             onPick: () => addSql(w),
