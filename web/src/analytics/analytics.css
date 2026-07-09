@@ -180,38 +180,6 @@
   color: var(--text);
 }
 
-/* Inline delete confirmation replacing a saved-query row */
-.an-rail__confirm {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  border-color: color-mix(in srgb, var(--bad) 35%, var(--rule));
-}
-.an-rail__confirm-label {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--muted);
-}
-.an-rail__confirm-btn {
-  background: transparent;
-  border: none;
-  padding: 0 4px;
-  cursor: pointer;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.an-rail__confirm-btn:hover {
-  color: var(--text);
-}
-.an-rail__confirm-btn.is-danger {
-  color: var(--bad);
-}
-
 .an-rail__dot {
   width: 6px;
   height: 6px;

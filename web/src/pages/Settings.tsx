@@ -5,6 +5,7 @@ import { Check, Copy, MailPlus, Trash2 } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../ui/Toast";
 import { useMe } from "../api/hooks";
+import ConfirmDialog from "../ui/ConfirmDialog";
 
 type Invite = {
   id: number;
@@ -43,6 +44,7 @@ export default function Settings() {
   const [email, setEmail] = useState("");
   const [token, setToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [revoking, setRevoking] = useState<number | null>(null);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -301,17 +303,7 @@ export default function Settings() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => {
-                      if (!window.confirm("Revoke this invite?")) return;
-                      revoke
-                        .mutateAsync(i.id)
-                        .catch((e) =>
-                          toast.error(
-                            "Revoke failed: " +
-                              ((e as Error).message ?? "unknown"),
-                          ),
-                        );
-                    }}
+                    onClick={() => setRevoking(i.id)}
                     title="Revoke"
                     aria-label="Revoke invite"
                     style={{
@@ -330,6 +322,26 @@ export default function Settings() {
           </ul>
         )}
       </section>
+      <ConfirmDialog
+        open={revoking !== null}
+        title="Revoke invite"
+        message="Revoke this invite? The link stops working immediately."
+        confirmLabel="Revoke"
+        danger
+        onConfirm={() => {
+          const id = revoking;
+          setRevoking(null);
+          if (id === null) return;
+          revoke
+            .mutateAsync(id)
+            .catch((e) =>
+              toast.error(
+                "Revoke failed: " + ((e as Error).message ?? "unknown"),
+              ),
+            );
+        }}
+        onCancel={() => setRevoking(null)}
+      />
     </div>
   );
 }

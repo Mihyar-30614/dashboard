@@ -4,11 +4,13 @@ import {
   useCreateSqlWidget, useUpdateSqlWidget, useDeleteSqlWidget,
 } from "../api/sqlWidgets";
 import type { SqlWidget, PreviewResult, SqlVizKind } from "../api/sqlWidgets";
+import ConfirmDialog from "../ui/ConfirmDialog";
 
 export default function SqlWidgets() {
   const list = useSqlWidgets();
   const del = useDeleteSqlWidget();
   const [editing, setEditing] = useState<SqlWidget | "new" | null>(null);
+  const [deleting, setDeleting] = useState<SqlWidget | null>(null);
   const widgets = list.data ?? [];
 
   return (
@@ -44,11 +46,7 @@ export default function SqlWidgets() {
                 <td style={td}>
                   <button type="button" onClick={() => setEditing(w)}>Edit</button>
                   {" "}
-                  <button type="button" onClick={async () => {
-                    if (!window.confirm("Delete this widget? Layouts referencing it will show a deleted-widget tile."))
-                      return;
-                    await del.mutateAsync(w.id);
-                  }}>Delete</button>
+                  <button type="button" onClick={() => setDeleting(w)}>Delete</button>
                 </td>
               </tr>
             ))}
@@ -57,6 +55,22 @@ export default function SqlWidgets() {
       )}
 
       {editing && <Editor widget={editing} onClose={() => setEditing(null)} />}
+      <ConfirmDialog
+        open={deleting !== null}
+        title="Delete SQL widget"
+        message={
+          deleting
+            ? `Delete "${deleting.name}"? Dashboards using it will show a deleted-widget tile.`
+            : ""
+        }
+        confirmLabel="Delete"
+        danger
+        onConfirm={async () => {
+          if (deleting) await del.mutateAsync(deleting.id);
+          setDeleting(null);
+        }}
+        onCancel={() => setDeleting(null)}
+      />
     </div>
   );
 }

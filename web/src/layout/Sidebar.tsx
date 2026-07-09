@@ -20,6 +20,7 @@ import { api } from "../api/client";
 import { useApps } from "../api/hooks";
 import { hasDirty } from "../grid/savingRegistry";
 import { useToast } from "../ui/Toast";
+import ConfirmDialog from "../ui/ConfirmDialog";
 
 type Item = {
   slug: string;
@@ -94,13 +95,15 @@ export default function Sidebar() {
     window.dispatchEvent(new CustomEvent("themechange", { detail: theme }));
   }, [theme]);
 
+  const [confirmLogout, setConfirmLogout] = useState(false);
+
+  function requestLogout() {
+    if (hasDirty()) setConfirmLogout(true);
+    else logout();
+  }
+
   async function logout() {
-    if (hasDirty()) {
-      const ok = window.confirm(
-        "Layout has unsaved changes. Sign out anyway?",
-      );
-      if (!ok) return;
-    }
+    setConfirmLogout(false);
     try {
       await api.post("/api/auth/logout");
     } catch (e) {
@@ -314,7 +317,7 @@ export default function Sidebar() {
           {!collapsed && <span>Settings</span>}
         </NavLink>
         <UtilButton
-          onClick={logout}
+          onClick={requestLogout}
           collapsed={collapsed}
           label="Sign out"
           title={collapsed ? "Sign out" : undefined}
@@ -322,6 +325,14 @@ export default function Sidebar() {
           icon={<LogOut size={16} strokeWidth={1.7} />}
         />
       </div>
+      <ConfirmDialog
+        open={confirmLogout}
+        title="Sign out"
+        message="Layout has unsaved changes that will be lost. Sign out anyway?"
+        confirmLabel="Sign out"
+        onConfirm={logout}
+        onCancel={() => setConfirmLogout(false)}
+      />
     </aside>
   );
 }

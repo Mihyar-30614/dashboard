@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import SqlWidgets from "./SqlWidgets";
@@ -106,10 +106,9 @@ describe("SqlWidgets delete", () => {
     } as any);
     vi.spyOn(hooks, "useSqlDataSources").mockReturnValue({ data: [], isLoading: false } as any);
     vi.spyOn(hooks, "useDeleteSqlWidget").mockReturnValue({ mutateAsync: delMock } as any);
-    vi.spyOn(window, "confirm").mockReturnValue(true);
-
     wrap(<SqlWidgets />);
     fireEvent.click(screen.getByRole("button", { name: /^delete$/i }));
+    fireEvent.click(within(screen.getByRole("dialog")).getByText("Delete"));
     await waitFor(() => expect(delMock).toHaveBeenCalledWith(5));
   });
 });
