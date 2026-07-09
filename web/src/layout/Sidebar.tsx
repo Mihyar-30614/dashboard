@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { useQueryClient, useIsFetching } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Box,
   ChevronLeft,
@@ -9,7 +9,6 @@ import {
   LayoutDashboard,
   LogOut,
   Moon,
-  RefreshCw,
   Settings,
   Sparkles,
   Sun,
@@ -80,7 +79,6 @@ export default function Sidebar() {
   }, [collapsed]);
 
   const qc = useQueryClient();
-  const fetching = useIsFetching() > 0;
   const nav = useNavigate();
   const toast = useToast();
 
@@ -95,11 +93,6 @@ export default function Sidebar() {
     localStorage.setItem("theme", theme);
     window.dispatchEvent(new CustomEvent("themechange", { detail: theme }));
   }, [theme]);
-
-  function refresh() {
-    if (fetching) return;
-    qc.invalidateQueries();
-  }
 
   async function logout() {
     if (hasDirty()) {
@@ -269,16 +262,6 @@ export default function Sidebar() {
         }}
       >
         <UtilButton
-          onClick={refresh}
-          disabled={fetching}
-          collapsed={collapsed}
-          label="Refresh"
-          title={collapsed ? "Refresh data" : undefined}
-          ariaLabel="Refresh dashboard data"
-          icon={<RefreshCw size={16} strokeWidth={1.7} />}
-          spinning={fetching}
-        />
-        <UtilButton
           onClick={() => setTheme((t) => (t === "light" ? "dark" : "light"))}
           collapsed={collapsed}
           label={theme === "light" ? "Dark mode" : "Light mode"}
@@ -351,7 +334,6 @@ function UtilButton({
   title,
   ariaLabel,
   icon,
-  spinning,
 }: {
   onClick: () => void;
   disabled?: boolean;
@@ -360,7 +342,6 @@ function UtilButton({
   title?: string;
   ariaLabel: string;
   icon: ReactNode;
-  spinning?: boolean;
 }) {
   return (
     <button
@@ -396,7 +377,6 @@ function UtilButton({
           width: 22,
           height: 22,
           flexShrink: 0,
-          animation: spinning ? "spin 0.9s linear infinite" : "none",
         }}
       >
         {icon}
