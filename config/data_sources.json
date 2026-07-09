@@ -7,7 +7,7 @@
       "host": "localhost",
       "port": 5432,
       "database": "sportly",
-      "user": "sportly_ro"
+      "user": "dashboard_reader"
     }
   },
   "honeydoeh": {
@@ -18,7 +18,7 @@
       "host": "localhost",
       "port": 5432,
       "database": "honeydoeh",
-      "user": "honeydoeh_ro"
+      "user": "dashboard_reader"
     }
   },
   "debtmanager": {
@@ -29,7 +29,7 @@
       "host": "localhost",
       "port": 5432,
       "database": "debtapp",
-      "user": "debtmanager_ro"
+      "user": "dashboard_reader"
     }
   }
 }

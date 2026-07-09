@@ -5,7 +5,7 @@
       "host": "localhost",
       "port": 5432,
       "database": "sportly",
-      "user": "postgres"
+      "user": "dashboard_reader"
     },
     "health_url": "http://localhost:4003/health",
     "pm2_name": "sportly-backend",
@@ -35,7 +35,7 @@
       "host": "localhost",
       "port": 5432,
       "database": "honeydoeh",
-      "user": "postgres"
+      "user": "dashboard_reader"
     },
     "health_url": "http://localhost:4002/health",
     "pm2_name": "honeydoeh-api",
@@ -65,7 +65,7 @@
       "host": "localhost",
       "port": 5432,
       "database": "debtapp",
-      "user": "postgres"
+      "user": "dashboard_reader"
     },
     "health_url": "http://localhost:4006/health",
     "pm2_name": "debtmanager-api",

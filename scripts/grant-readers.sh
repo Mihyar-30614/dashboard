@@ -1,20 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# Usage: APP_DB_PASSWORDS_JSON='{"sportly":"...","honeydoeh":"...","debtmanager":"..."}' \
-#        ./scripts/grant-readers.sh
-# Run against each app DB. Requires superuser psql access.
+# Provisions the shared read-only role used by the dashboard for app DBs
+# (collectors via config/apps.json and SQL widgets via config/data_sources.json).
+# Usage: RO_PASSWORD='...' ./scripts/grant-readers.sh
+# Then set the same password in .env: APP_DB_PASSWORDS_JSON and
+# DATA_SOURCE_RO_PASSWORDS_JSON (JSON maps keyed by app/data-source name).
+# Requires superuser psql access.
 
-read_pw() { python3 -c "import os,json;print(json.loads(os.environ['APP_DB_PASSWORDS_JSON'])['$1'])"; }
+: "${RO_PASSWORD:?set RO_PASSWORD}"
 
 run() {
-  local db="$1" pw="$2"
+  local db="$1"
   psql "$db" <<SQL
 DO \$\$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='dashboard_reader') THEN
-    EXECUTE format('CREATE ROLE dashboard_reader LOGIN PASSWORD %L', '${pw}');
+    EXECUTE format('CREATE ROLE dashboard_reader LOGIN PASSWORD %L', '${RO_PASSWORD}');
   ELSE
-    EXECUTE format('ALTER ROLE dashboard_reader WITH PASSWORD %L', '${pw}');
+    EXECUTE format('ALTER ROLE dashboard_reader WITH PASSWORD %L', '${RO_PASSWORD}');
   END IF;
 END
 \$\$;
@@ -25,7 +28,7 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO dashboard_re
 SQL
 }
 
-run sportly      "$(read_pw sportly)"
-run honeydoeh    "$(read_pw honeydoeh)"
-run debtmanager  "$(read_pw debtmanager)"
+run sportly
+run honeydoeh
+run debtapp
 echo "done"
