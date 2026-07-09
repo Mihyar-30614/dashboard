@@ -1,6 +1,6 @@
 export const RANGE_DAYS = { '7d': 7, '30d': 30, '90d': 90 };
-export const MAX_SQL_BYTES = 16 * 1024;
-export const STATEMENT_TIMEOUT_MS = 5_000;
+const MAX_SQL_BYTES = 16 * 1024;
+const STATEMENT_TIMEOUT_MS = 5_000;
 export const MAX_ROWS = 1000;
 
 export function rewriteSql(sql, range) {
@@ -13,13 +13,14 @@ export function rewriteSql(sql, range) {
   }
   const days = RANGE_DAYS[range] ?? 30;
 
-  // Reject unknown :word tokens (other than :range_days).
-  const tokens = [...sql.matchAll(/:([a-zA-Z_][a-zA-Z0-9_]*)/g)].map(m => m[1]);
+  // Reject unknown :word tokens (other than :range_days). A '::' cast is not a param.
+  const tokens = [...sql.matchAll(/(?<!:):([a-zA-Z_][a-zA-Z0-9_]*)/g)].map(m => m[1]);
   for (const t of tokens) {
     if (t !== 'range_days') throw new Error('unknown_param:' + t);
   }
-  const text = sql.replace(/:range_days\b/g, '$1');
-  return { text, days };
+  const text = sql.replace(/(?<!:):range_days\b/g, '$1');
+  const values = tokens.includes('range_days') ? [days] : [];
+  return { text, days, values };
 }
 
 export function inferViz({ columns, rows }) {
@@ -45,7 +46,7 @@ export function inferViz({ columns, rows }) {
 }
 
 export async function executeSqlWidget(pool, sql, range) {
-  const { text, days } = rewriteSql(sql, range);
+  const { text, values } = rewriteSql(sql, range);
   const start = Date.now();
   const client = await pool.connect();
   try {
@@ -54,7 +55,7 @@ export async function executeSqlWidget(pool, sql, range) {
     await client.query('BEGIN READ ONLY');
     let result;
     try {
-      result = await client.query(text, [days]);
+      result = values.length ? await client.query(text, values) : await client.query(text);
       await client.query('ROLLBACK');
     } catch (err) {
       try { await client.query('ROLLBACK'); } catch { /* ignore */ }

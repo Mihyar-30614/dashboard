@@ -58,6 +58,22 @@ describe('rewriteSql', () => {
   it('RANGE_DAYS maps known values', () => {
     expect(RANGE_DAYS).toEqual({ '7d': 7, '30d': 30, '90d': 90 });
   });
+
+  it('does not treat ::type casts as params', () => {
+    const { text } = rewriteSql('SELECT now()::date', '7d');
+    expect(text).toBe('SELECT now()::date');
+  });
+
+  it('handles :range_days adjacent to a cast', () => {
+    const { text, values } = rewriteSql("SELECT (:range_days || ' days')::interval", '7d');
+    expect(text).toBe("SELECT ($1 || ' days')::interval");
+    expect(values).toEqual([7]);
+  });
+
+  it('returns empty values when :range_days absent', () => {
+    const { values } = rewriteSql('SELECT 1', '7d');
+    expect(values).toEqual([]);
+  });
 });
 
 describe('executeSqlWidget', () => {
@@ -94,6 +110,12 @@ describe('executeSqlWidget', () => {
       .rejects.toThrow();
     expect(pool._queries).toContain('ROLLBACK');
     expect(pool._client.release).toHaveBeenCalled();
+  });
+
+  it('omits bind params when :range_days absent', async () => {
+    const pool = fakePool({ rows: [], fields: [] });
+    await executeSqlWidget(pool, 'SELECT 1', '7d');
+    expect(pool._client.query).toHaveBeenCalledWith('SELECT 1');
   });
 
   it('returns durationMs as a number', async () => {
