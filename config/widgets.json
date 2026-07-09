@@ -140,6 +140,16 @@
     "paramsSchema": [{ "name": "keys", "type": "string", "required": true }]
   },
   {
+    "kind": "uptime",
+    "label": "Uptime",
+    "description": "Health-check uptime history as a green/amber/red segment strip.",
+    "defaultSize": { "w": 6, "h": 2 },
+    "scope": "app",
+    "paramsSchema": [
+      { "name": "range", "type": "enum", "values": ["24h", "7d", "30d"], "default": "7d" }
+    ]
+  },
+  {
     "kind": "sql",
     "label": "Custom SQL",
     "description": "Render saved custom SQL queries as number, line, bar, or table.",

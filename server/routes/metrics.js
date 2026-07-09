@@ -53,6 +53,32 @@ const KINDS = {
     if (!kpi) throw new Error("unknown_kpi");
     return runKpi(pool, kpi);
   },
+  uptime: async ({ params, appCfg }) => {
+    const hours = { "24h": 24, "7d": 168, "30d": 720 }[params.range] || 168;
+    const BUCKETS = 48;
+    const { rows } = await query(
+      `WITH samples AS (
+         SELECT width_bucket(
+                  extract(epoch FROM taken_at),
+                  extract(epoch FROM NOW() - $2::int * INTERVAL '1 hour'),
+                  extract(epoch FROM NOW()),
+                  $3::int
+                ) AS bucket,
+                value
+           FROM metric_samples
+          WHERE app_slug = $1 AND metric = 'health_ok'
+            AND taken_at >= NOW() - $2::int * INTERVAL '1 hour'
+       )
+       SELECT g AS bucket,
+              AVG(s.value)::float8 AS ratio,
+              COUNT(s.value)::int AS samples
+         FROM generate_series(1, $3::int) g
+         LEFT JOIN samples s ON s.bucket = g
+        GROUP BY g ORDER BY g`,
+      [appCfg.slug, hours, BUCKETS],
+    );
+    return { hours, buckets: rows };
+  },
   kpi_timeseries: async ({ params, appCfg }) => {
     const slug = appCfg.slug;
     const days = { "7d": 7, "30d": 30, "90d": 90 }[params.range] || 30;

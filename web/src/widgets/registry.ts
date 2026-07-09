@@ -17,6 +17,7 @@ import KpiSparkline from "./KpiSparkline";
 import KpiDelta from "./KpiDelta";
 import KpiTarget from "./KpiTarget";
 import KpiMultiStat from "./KpiMultiStat";
+import UptimeStrip from "./UptimeStrip";
 
 type WidgetMeta = (typeof widgetsMeta)[number];
 
@@ -45,6 +46,7 @@ const COMPONENTS: Record<string, FC<any>> = {
   kpi_delta: KpiDelta,
   kpi_target: KpiTarget,
   kpi_multistat: KpiMultiStat,
+  uptime: UptimeStrip,
   sql: SqlWidget,
 };
 

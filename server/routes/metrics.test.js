@@ -111,4 +111,27 @@ describe('GET /api/metrics/:kind', () => {
     const res = await agent.get('/api/metrics/kpi?app=sportly&key=nope');
     expect(res.body.error).toBe('unknown_kpi');
   });
+
+  it('uptime buckets health_ok samples over the range', async () => {
+    const { dbPool } = await import('../db.js');
+    await dbPool.query(
+      `INSERT INTO metric_samples(app_slug, metric, value, taken_at)
+       VALUES ('sportly','health_ok',1,NOW() - INTERVAL '1 hour'),
+              ('sportly','health_ok',0,NOW() - INTERVAL '1 hour'),
+              ('sportly','health_ok',1,NOW() - INTERVAL '30 minutes')`,
+    );
+    const res = await agent.get('/api/metrics/uptime?app=sportly&range=24h');
+    expect(res.status).toBe(200);
+    const { buckets } = res.body.data;
+    expect(buckets).toHaveLength(48);
+    const withData = buckets.filter((b) => b.samples > 0);
+    expect(withData.length).toBeGreaterThanOrEqual(1);
+    expect(withData.reduce((s, b) => s + b.samples, 0)).toBe(3);
+  });
+
+  it('uptime falls back to 7d on unknown range', async () => {
+    const res = await agent.get('/api/metrics/uptime?app=sportly&range=90d');
+    expect(res.status).toBe(200);
+    expect(res.body.data.buckets).toHaveLength(48);
+  });
 });
