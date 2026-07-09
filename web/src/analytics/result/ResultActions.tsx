@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { QA, ResultTab } from "../types";
 import type { SavedQueryRequest } from "../../api/llm";
 import { toCsv } from "../format";
+import PinToDashboard from "./PinToDashboard";
 
 export default function ResultActions({
   qa,
@@ -103,6 +104,7 @@ export default function ResultActions({
       <button type="button" onClick={download} disabled={!canCsv}>
         ⬇ csv
       </button>
+      <PinToDashboard qa={qa} dbName={dbName} onToast={onToast} />
       {showForm && (
         <form
           className="an-save-form"
