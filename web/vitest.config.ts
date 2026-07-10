@@ -7,12 +7,13 @@ export default defineConfig({
   resolve: {
     alias: {
       "@config": path.resolve(__dirname, "../config"),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
   test: {
     environment: "jsdom",
-    setupFiles: ["./src/test-setup.ts"],
+    setupFiles: [path.resolve(__dirname, "../tests/setup/web-setup.ts")],
     globals: false,
-    include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    include: [path.resolve(__dirname, "../tests/web/**/*.{test,spec}.{ts,tsx}")],
   },
 });

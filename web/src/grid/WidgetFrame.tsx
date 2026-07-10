@@ -5,6 +5,8 @@ import { ExpandContext } from "./expandContext";
 
 type Props = {
   title: string;
+  /** eyebrow = mono uppercase (default). label = display title for KPI-style widgets. */
+  titleVariant?: "eyebrow" | "label";
   onRemove?: () => void;
   error?: string | null;
   stale?: boolean;
@@ -14,6 +16,7 @@ type Props = {
 
 export default function WidgetFrame({
   title,
+  titleVariant = "eyebrow",
   onRemove,
   error,
   stale,
@@ -48,14 +51,22 @@ export default function WidgetFrame({
         }}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <span className="eyebrow">{title}</span>
+          {titleVariant === "label" ? (
+            <h3 className="widget-title">{title}</h3>
+          ) : (
+            <span className="eyebrow">{title}</span>
+          )}
           {meta && (
-            <span
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                color: "var(--muted)",
-              }}
+            <span className={titleVariant === "label" ? "widget-context" : undefined}
+              style={
+                titleVariant === "label"
+                  ? undefined
+                  : {
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 11,
+                      color: "var(--muted)",
+                    }
+              }
             >
               {meta}
             </span>

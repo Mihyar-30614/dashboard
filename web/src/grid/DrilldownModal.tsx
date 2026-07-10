@@ -50,7 +50,7 @@ export default function DrilldownModal({
           width: "min(1100px, 92vw)",
           height: "min(700px, 84vh)",
           background: "var(--bg)",
-          border: "1px solid color-mix(in srgb, var(--rule) 70%, transparent)",
+          border: "1px solid color-mix(in srgb, var(--border) 70%, transparent)",
           borderRadius: "var(--radius-lg)",
           boxShadow: "var(--shadow-md)",
           padding: 20,

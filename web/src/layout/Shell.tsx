@@ -56,7 +56,7 @@ export default function Shell() {
             justifyContent: "space-between",
             alignItems: "center",
             padding: "14px 28px",
-            borderBottom: "1px solid var(--rule)",
+            borderBottom: "1px solid var(--border)",
             background: "transparent",
             backdropFilter: "blur(8px)",
           }}
@@ -85,7 +85,7 @@ export default function Shell() {
                   alignItems: "center",
                   gap: 8,
                   paddingLeft: 18,
-                  borderLeft: "1px solid var(--rule)",
+                  borderLeft: "1px solid var(--border)",
                   color: "var(--muted)",
                 }}
               >

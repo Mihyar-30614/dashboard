@@ -202,7 +202,7 @@ function Editor({
       </select>
 
       {dataSource && (
-        <details style={{ border: "1px solid var(--rule)", borderRadius: "var(--radius)", padding: "6px 10px" }}>
+        <details style={{ border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "6px 10px" }}>
           <summary style={{
             cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 10,
             letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--muted)",
@@ -224,7 +224,7 @@ function Editor({
       <div style={{ fontSize: 11, color: "var(--muted)" }}>
         Use <code>:range_days</code> to bind the 7d/30d/90d range picker.
       </div>
-      <div style={{ border: "1px solid var(--rule)", borderRadius: "var(--radius)", overflow: "hidden" }}>
+      <div style={{ border: "1px solid var(--border)", borderRadius: "var(--radius)", overflow: "hidden" }}>
         <CodeMirror
           ref={cmRef}
           value={sql}
@@ -324,7 +324,7 @@ function PreviewArea({
 
 const drawer: React.CSSProperties = {
   position: "fixed", top: 0, right: 0, bottom: 0, width: 480,
-  background: "var(--panel)", borderLeft: "1px solid var(--rule)",
+  background: "var(--panel)", borderLeft: "1px solid var(--border)",
   padding: 24, zIndex: 30, overflowY: "auto",
   display: "flex", flexDirection: "column", gap: 8,
 };

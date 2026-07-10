@@ -10,7 +10,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { isDateValue, isNumericValue } from "../format";
+import { formatDateValue, isDateValue, isNumericValue } from "../../lib/format";
 
 type Row = Record<string, unknown>;
 
@@ -139,8 +139,8 @@ export default function ChartView({
             fontSize: 11,
             color: "var(--muted)",
             padding: "6px 10px",
-            border: "1px dashed var(--rule)",
-            borderRadius: 6,
+            border: "1px dashed var(--border)",
+            borderRadius: "var(--radius)",
           }}
         >
           chart unavailable · {pick.reason}
@@ -155,7 +155,7 @@ export default function ChartView({
     css.getPropertyValue(name).trim() || fallback;
 
   const accent = v("--chart-1", "#0f6b66");
-  const rule = v("--rule", "#d9d4c5");
+  const rule = v("--border", "#d9d4c5");
   const panel = v("--panel", "#fffcf5");
   const text = v("--text", "#15171c");
   const muted = v("--muted", "#6c6a62");
@@ -165,12 +165,12 @@ export default function ChartView({
   const tooltipStyle = {
     background: panel,
     border: `1px solid ${rule}`,
-    borderRadius: 6,
+    borderRadius: "var(--radius)",
     fontFamily: "var(--font-mono)",
     fontSize: 12,
     color: text,
-    padding: "8px 10px",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+    padding: "var(--space-2) 10px",
+    boxShadow: "var(--shadow-sm)",
   };
   const tooltipLabel = { color: muted, marginBottom: 4 };
   const tooltipItem = { color: text };
@@ -192,6 +192,7 @@ export default function ChartView({
             stroke={rule}
             tick={axisTick}
             tickLine={false}
+            tickFormatter={(v) => formatDateValue(v) ?? String(v)}
           />
           <YAxis stroke={rule} tick={axisTick} tickLine={false} />
           <Tooltip
@@ -199,6 +200,7 @@ export default function ChartView({
             labelStyle={tooltipLabel}
             itemStyle={tooltipItem}
             cursor={tooltipCursor}
+            labelFormatter={(v) => formatDateValue(v) ?? String(v)}
           />
           <Bar dataKey={pick.yKey} fill={accent} radius={[4, 4, 0, 0]} />
         </BarChart>
@@ -210,6 +212,7 @@ export default function ChartView({
             stroke={rule}
             tick={axisTick}
             tickLine={false}
+            tickFormatter={(v) => formatDateValue(v) ?? String(v)}
           />
           <YAxis stroke={rule} tick={axisTick} tickLine={false} />
           <Tooltip
@@ -217,6 +220,7 @@ export default function ChartView({
             labelStyle={tooltipLabel}
             itemStyle={tooltipItem}
             cursor={{ stroke: accent, strokeWidth: 1 }}
+            labelFormatter={(v) => formatDateValue(v) ?? String(v)}
           />
           <Line
             type="monotone"

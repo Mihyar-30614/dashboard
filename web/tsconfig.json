@@ -16,7 +16,8 @@
     "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true,
     "paths": {
-      "@config/*": ["../config/*"]
+      "@config/*": ["../config/*"],
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src"]

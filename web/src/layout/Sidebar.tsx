@@ -40,13 +40,24 @@ const STATIC_SECTIONS: { label: string; items: Item[] }[] = [
   {
     label: "Surveys",
     items: [
-      { slug: "overview", label: "Overview", Icon: LayoutDashboard, path: "/", end: true },
+      {
+        slug: "overview",
+        label: "Overview",
+        Icon: LayoutDashboard,
+        path: "/",
+        end: true,
+      },
     ],
   },
   {
     label: "Analytics",
     items: [
-      { slug: "analytics", label: "Ask DB", Icon: Sparkles, path: "/analytics" },
+      {
+        slug: "analytics",
+        label: "Ask DB",
+        Icon: Sparkles,
+        path: "/analytics",
+      },
     ],
   },
 ];
@@ -107,9 +118,7 @@ export default function Sidebar() {
     try {
       await api.post("/api/auth/logout");
     } catch (e) {
-      toast.error(
-        "Logout failed: " + ((e as Error).message ?? "unknown"),
-      );
+      toast.error("Logout failed: " + ((e as Error).message ?? "unknown"));
       return;
     }
     qc.clear();
@@ -121,13 +130,13 @@ export default function Sidebar() {
       style={{
         width: collapsed ? 60 : 232,
         flexShrink: 0,
-        borderRight: "1px solid var(--rule)",
+        borderRight: "1px solid var(--border)",
         padding: collapsed ? "26px 8px" : "26px 18px",
         display: "flex",
         flexDirection: "column",
         gap: 24,
         background: "transparent",
-        transition: "width 160ms ease, padding 160ms ease",
+        transition: "width var(--duration-normal) ease, padding var(--duration-normal) ease",
         overflow: "hidden",
       }}
     >
@@ -147,7 +156,7 @@ export default function Sidebar() {
             alt="Observatory"
             width={32}
             height={32}
-            style={{ display: "block", borderRadius: 8 }}
+            style={{ display: "block", borderRadius: "var(--radius)" }}
           />
         ) : (
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -157,7 +166,7 @@ export default function Sidebar() {
               aria-hidden
               width={28}
               height={28}
-              style={{ display: "block", borderRadius: 7, flexShrink: 0 }}
+              style={{ display: "block", borderRadius: "var(--radius)", flexShrink: 0 }}
             />
             <div>
               <div
@@ -191,7 +200,7 @@ export default function Sidebar() {
             alignItems: "center",
             justifyContent: "center",
             background: "transparent",
-            border: "1px solid var(--rule)",
+            border: "1px solid var(--border)",
             borderRadius: "var(--radius)",
             color: "var(--muted)",
             cursor: "pointer",
@@ -238,14 +247,14 @@ export default function Sidebar() {
                   justifyContent: collapsed ? "center" : "flex-start",
                   gap: 10,
                   padding: collapsed ? "9px 0" : "9px 12px",
-                  borderRadius: 999,
+                  borderRadius: "var(--radius-lg)",
                   textDecoration: "none",
                   color: isActive ? "var(--text)" : "var(--ink-soft)",
                   background: isActive
                     ? "color-mix(in srgb, var(--accent) 12%, transparent)"
                     : "transparent",
                   fontWeight: isActive ? 600 : 400,
-                  transition: "background 120ms, color 120ms",
+                  transition: "background var(--duration-fast), color var(--duration-fast)",
                 })}
               >
                 {({ isActive }) => (

@@ -1,4 +1,4 @@
-import { highlightSql } from "../format";
+import { highlightSql } from "../../lib/format";
 
 export default function SqlView({ sql }: { sql: string | null }) {
   if (!sql) {

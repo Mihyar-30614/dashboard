@@ -18,7 +18,7 @@ Self-hosted operations dashboard that aggregates metrics from monitored applicat
 - **`config/apps.json`** — Per-app labels, DB connection info, metric SQL snippets, HTTP health URLs, PM2 names, nginx log paths.
 - **`config/widgets.json`** — Shared widget catalog (kinds, sizes, scopes); used by server validation and the web registry.
 - **`config/data_sources.json`** — Read-only Postgres roles used by SQL widgets (passwords separate — see Configuration).
-- **`scripts/`** — `seed-admin.js`, shell helpers (`backup.sh`, `grant-readers.sh`).
+- **`tests/`** — All tests: `tests/server/` (API Vitest), `tests/web/` (component Vitest), `tests/e2e/` (Playwright), `tests/setup/` (shared fixtures), `tests/fixtures/` (sample data).
 
 ## Prerequisites
 
@@ -40,7 +40,7 @@ Self-hosted operations dashboard that aggregates metrics from monitored applicat
    cp .env.example .env
    ```
 
-   See `.env.example` for dashboard DB, sessions, first-admin bootstrap (`ADMIN_EMAIL`, `ADMIN_PASSWORD`, then run `npm run seed:admin`), `APP_DB_PASSWORDS_JSON` (passwords keyed by app slug matching `apps.json`), and optional poller-related paths (`PM2_BIN`, `NGINX_LOG_DIR`).
+   See `.env.example` for dashboard DB, sessions, first-admin bootstrap (`ADMIN_EMAIL`, `ADMIN_PASSWORD`, then run `npm run seed:admin`), `DASHBOARD_READER_PASSWORD` (shared `dashboard_reader` password for app DBs), and optional poller-related paths (`PM2_BIN`, `NGINX_LOG_DIR`).
 
    For local dev the browser talks to **Vite** on **`http://localhost:4210`**, which proxies `/api` to the API. Set **`APP_ORIGIN`** to include that origin so non-GET API requests from Vite succeed (comma-separated origins if you need multiple).
 
@@ -72,17 +72,24 @@ PM2 is optional; if you use it, keep an `ecosystem.config.cjs` locally (this fil
 
 ## Configuration notes
 
-- **`APP_DB_PASSWORDS_JSON`** — JSON object of database passwords for each app slug in `config/apps.json` (used for direct monitoring connections as configured there).
-- **SQL widgets** — `config/data_sources.json` describes read-only DB users; set **`DATA_SOURCE_RO_PASSWORDS_JSON`** to a JSON map of data source name → password.
+- **`DASHBOARD_READER_PASSWORD`** — Password for the shared `dashboard_reader` role on app databases (`config/apps.json` monitoring + `config/data_sources.json` SQL widgets). Set this to the same value used in `scripts/grant-readers.sh`.
 - **`POLLER=off`** — Skips starting the background poller (useful for tests or API-only runs).
+
+- **`scripts/`** — `seed-admin.js`, shell helpers (`backup.sh`, `grant-readers.sh`).
 
 ## Tests
 
+Server tests use a separate test database. Copy the example env before running:
+
 ```bash
-npm test
+cp .env.test.example .env.test
+# create dashboard_test if needed: createdb dashboard_test && psql dashboard_test < schema.sql
+npm test              # server + web unit tests
+npm run test:watch    # both in watch mode
+npm run test:e2e      # Playwright (starts API + Vite automatically)
 ```
 
-Runs Vitest in `server` and `web`. Playwright is available in `web` for E2E work.
+Tests live under **`tests/`** — `tests/server/`, `tests/web/`, `tests/e2e/`, plus `tests/setup/` and `tests/fixtures/`.
 
 ## Useful scripts (root `package.json`)
 
@@ -94,6 +101,9 @@ Runs Vitest in `server` and `web`. Playwright is available in `web` for E2E work
 | `npm run build` | Production web build |
 | `npm start` | Production API + static `web-prod` |
 | `npm run seed:admin` | Bootstrap admin user (see script / env) |
+| `npm test` | Server + web Vitest |
+| `npm run test:watch` | Vitest watch (server + web) |
+| `npm run test:e2e` | Playwright E2E |
 
 Automate syncing **`web/dist`** into **`web-prod/`** with whatever fits your hosts (cron, systemd, etc.).
 

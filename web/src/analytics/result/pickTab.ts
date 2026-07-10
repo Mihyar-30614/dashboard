@@ -1,5 +1,5 @@
 import type { ResultTab } from "../types";
-import { isDateValue, isNumericValue } from "../format";
+import { isDateValue, isNumericValue } from "../../lib/format";
 
 type Row = Record<string, unknown>;
 

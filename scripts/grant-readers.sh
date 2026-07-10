@@ -3,8 +3,7 @@ set -euo pipefail
 # Provisions the shared read-only role used by the dashboard for app DBs
 # (collectors via config/apps.json and SQL widgets via config/data_sources.json).
 # Usage: RO_PASSWORD='...' ./scripts/grant-readers.sh
-# Then set the same password in .env: APP_DB_PASSWORDS_JSON and
-# DATA_SOURCE_RO_PASSWORDS_JSON (JSON maps keyed by app/data-source name).
+# Then set the same password in .env: DASHBOARD_READER_PASSWORD
 # Requires superuser psql access.
 
 : "${RO_PASSWORD:?set RO_PASSWORD}"

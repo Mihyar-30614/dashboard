@@ -119,7 +119,7 @@ function ToastItem({ t, onClose }: { t: Toast; onClose: () => void }) {
         padding: "10px 14px 10px 12px",
         background: c.bg,
         color: c.fg,
-        border: "1px solid var(--rule)",
+        border: "1px solid var(--border)",
         borderLeft: `3px solid ${c.led}`,
         borderRadius: "var(--radius)",
         boxShadow: "var(--shadow-md)",

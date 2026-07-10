@@ -57,7 +57,7 @@ export default function WidgetPalette({
           bottom: 0,
           width: 340,
           background: "var(--panel)",
-          borderLeft: "1px solid var(--rule)",
+          borderLeft: "1px solid var(--border)",
           padding: 24,
           zIndex: 20,
           overflowY: "auto",

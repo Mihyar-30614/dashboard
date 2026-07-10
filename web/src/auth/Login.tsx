@@ -38,7 +38,7 @@ export default function Login() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          borderRight: "1px solid var(--rule)",
+          borderRight: "1px solid var(--border)",
         }}
       >
         <div>

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { formatCell } from "../format";
+import { formatCell } from "../../lib/format";
 
 type Row = Record<string, unknown>;
 type SortDir = "asc" | "desc" | null;

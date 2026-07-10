@@ -1,23 +1,29 @@
 import type { FC } from "react";
 import widgetsMeta from "@config/widgets.json";
 import type { ParamField } from "../grid/paramsEditing";
-import SqlWidget from "./SqlWidget";
-import UsersTotal from "./UsersTotal";
-import DauCard from "./DauCard";
-import HealthCard from "./HealthCard";
-import SignupsTimeseries from "./SignupsTimeseries";
-import ActiveTimeseries from "./ActiveTimeseries";
-import Pm2Card from "./Pm2Card";
-import HttpRate from "./HttpRate";
-import HttpErrors from "./HttpErrors";
-import HttpLatency from "./HttpLatency";
-import KpiCard from "./KpiCard";
-import KpiTimeseries from "./KpiTimeseries";
-import KpiSparkline from "./KpiSparkline";
-import KpiDelta from "./KpiDelta";
-import KpiTarget from "./KpiTarget";
-import KpiMultiStat from "./KpiMultiStat";
-import UptimeStrip from "./UptimeStrip";
+import {
+  KpiCard,
+  KpiDelta,
+  KpiMultiStat,
+  KpiSparkline,
+  KpiTarget,
+} from "./kpis";
+import {
+  ActiveTimeseries,
+  KpiTimeseries,
+  SignupsTimeseries,
+} from "./charts";
+import {
+  DauCard,
+  HealthCard,
+  HttpErrors,
+  HttpLatency,
+  HttpRate,
+  Pm2Card,
+  UptimeStrip,
+  UsersTotal,
+} from "./metrics";
+import SqlWidget from "./sql";
 
 type WidgetMeta = (typeof widgetsMeta)[number];
 

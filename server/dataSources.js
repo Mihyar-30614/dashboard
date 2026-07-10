@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
+import { dashboardReaderPassword } from './config.js';
 
 const { Pool } = pg;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -13,9 +14,15 @@ export function _resetForTests() {
   pools.clear();
 }
 
+function passwordForSource(name, def) {
+  if (def.kind === 'dashboard' || name === 'dashboard') {
+    return process.env.DB_PASSWORD || def.db_ro?.password || '';
+  }
+  return dashboardReaderPassword() || def.db_ro?.password || '';
+}
+
 export function loadDataSources(p = defaultPath) {
   const raw = fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) : {};
-  const passwords = JSON.parse(process.env.DATA_SOURCE_RO_PASSWORDS_JSON || '{}');
 
   const out = {};
 
@@ -36,7 +43,7 @@ export function loadDataSources(p = defaultPath) {
   for (const [name, def] of Object.entries(raw)) {
     out[name] = {
       ...def,
-      db_ro: { ...def.db_ro, password: passwords[name] || def.db_ro?.password || '' }
+      db_ro: { ...def.db_ro, password: passwordForSource(name, def) }
     };
   }
 

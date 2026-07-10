@@ -4,69 +4,44 @@ export type PageHeaderProps = {
   eyebrow: string;
   title: string;
   meta?: ReactNode;
-  stats?: { k: string; v: string | number }[];
+  /** Contextual counts — rendered as inline metadata, not KPI-style metrics. */
+  stats?: { k: string; v: string | number; tone?: "ok" | "warn" | "bad" }[];
   actions?: ReactNode;
 };
+
+function PageHeaderSummary({
+  stats,
+}: {
+  stats: NonNullable<PageHeaderProps["stats"]>;
+}) {
+  return (
+    <p className="page-header__summary" data-testid="page-header-summary">
+      {stats.map((s, i) => (
+        <span key={s.k}>
+          {i > 0 && <span className="page-header__summary-sep">·</span>}
+          <span className={s.tone ? `page-header__summary--${s.tone}` : undefined}>
+            {s.v} {s.k.toLowerCase()}
+          </span>
+        </span>
+      ))}
+    </p>
+  );
+}
 
 export default function PageHeader({ eyebrow, title, meta, stats, actions }: PageHeaderProps) {
   return (
     <header
       data-testid="page-header"
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: 20,
-        marginBottom: 20,
-      }}
+      className="page-header"
     >
-      <div>
+      <div className="page-header__main">
         <span className="eyebrow">{eyebrow}</span>
         <h2 style={{ marginTop: 6, marginBottom: 0 }}>{title}</h2>
-        {meta && (
-          <div
-            style={{
-              marginTop: 6,
-              display: "flex",
-              gap: 14,
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              color: "var(--muted)",
-              letterSpacing: "0.06em",
-            }}
-          >
-            {meta}
-          </div>
-        )}
+        {stats && stats.length > 0 && <PageHeaderSummary stats={stats} />}
+        {meta && <div className="page-header__meta">{meta}</div>}
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-        {stats && stats.length > 0 && (
-          <div
-            style={{
-              display: "grid",
-              gridAutoFlow: "column",
-              gap: 18,
-              padding: "10px 16px",
-              border: "1px solid var(--rule)",
-              borderRadius: "var(--radius)",
-              background: "var(--panel)",
-            }}
-          >
-            {stats.map((s) => (
-              <div key={s.k}>
-                <div className="eyebrow" style={{ fontSize: 9 }}>
-                  {s.k}
-                </div>
-                <div className="metric metric--lg" style={{ marginTop: 4 }}>
-                  {s.v}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        {actions}
-      </div>
+      {actions && <div className="page-header__actions">{actions}</div>}
     </header>
   );
 }

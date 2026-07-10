@@ -54,7 +54,7 @@ export default function ConfirmDialog({
           width: "min(360px, calc(100vw - 48px))",
           padding: 20,
           background: "var(--panel)",
-          border: "1px solid color-mix(in srgb, var(--rule) 70%, transparent)",
+          border: "1px solid color-mix(in srgb, var(--border) 70%, transparent)",
           borderRadius: "var(--radius-lg)",
           boxShadow: "var(--shadow-md)",
           display: "flex",
@@ -72,7 +72,7 @@ export default function ConfirmDialog({
           <button
             type="button"
             onClick={onConfirm}
-            style={danger ? { color: "var(--bad)", borderColor: "color-mix(in srgb, var(--bad) 45%, var(--rule))" } : undefined}
+            style={danger ? { color: "var(--bad)", borderColor: "color-mix(in srgb, var(--bad) 45%, var(--border))" } : undefined}
           >
             {confirmLabel}
           </button>

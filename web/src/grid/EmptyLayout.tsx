@@ -14,7 +14,7 @@ export default function EmptyLayout({
         justifyContent: "center",
         gap: 14,
         padding: "60px 24px",
-        border: "1px dashed var(--rule)",
+        border: "1px dashed var(--border)",
         borderRadius: "var(--radius-lg)",
         background: "var(--panel)",
         textAlign: "center",

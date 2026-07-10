@@ -150,7 +150,7 @@ export default function Settings() {
             style={{
               marginTop: 16,
               padding: "12px 14px",
-              border: "1px solid color-mix(in srgb, var(--accent) 40%, var(--rule))",
+              border: "1px solid color-mix(in srgb, var(--accent) 40%, var(--border))",
               background: "color-mix(in srgb, var(--accent) 8%, transparent)",
               borderRadius: "var(--radius)",
               display: "flex",

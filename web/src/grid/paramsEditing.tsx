@@ -66,7 +66,7 @@ export function ParamsPopover({
         minWidth: 180,
         padding: 12,
         background: "var(--panel)",
-        border: "1px solid color-mix(in srgb, var(--rule) 70%, transparent)",
+        border: "1px solid color-mix(in srgb, var(--border) 70%, transparent)",
         borderRadius: "var(--radius-lg)",
         boxShadow: "var(--shadow-md)",
         display: "flex",

@@ -9,8 +9,14 @@ export default function Overview() {
   });
 
   const list = apps.data ?? [];
+  const total = list.length;
   const onlineCount = list.filter((a) => a.pm2_status === "online").length;
   const upCount = list.filter((a) => a.health?.ok).length;
+
+  const onlineTone =
+    total === 0 ? undefined : onlineCount === total ? "ok" : onlineCount === 0 ? "bad" : "warn";
+  const healthTone =
+    total === 0 ? undefined : upCount === total ? "ok" : upCount === 0 ? "bad" : "warn";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
@@ -18,9 +24,17 @@ export default function Overview() {
         eyebrow="overview · all properties"
         title="Overview"
         stats={[
-          { k: "Apps", v: list.length || "—" },
-          { k: "Online", v: list.length ? `${onlineCount}/${list.length}` : "—" },
-          { k: "Healthy", v: list.length ? `${upCount}/${list.length}` : "—" },
+          { k: "apps", v: total || "—" },
+          {
+            k: "online",
+            v: total ? `${onlineCount}/${total}` : "—",
+            tone: onlineTone,
+          },
+          {
+            k: "healthy",
+            v: total ? `${upCount}/${total}` : "—",
+            tone: healthTone,
+          },
         ]}
         actions={toolbar}
       />
