@@ -330,18 +330,7 @@ export default function Analytics() {
         </button>
         <div>
           <span className="eyebrow">analytics · ask your db</span>
-          <h1 style={{ marginTop: 6 }}>
-            <em
-              style={{
-                fontStyle: "italic",
-                color: "var(--accent)",
-                fontWeight: 500,
-              }}
-            >
-              Ask
-            </em>{" "}
-            anything.
-          </h1>
+          <h2 style={{ marginTop: 6, marginBottom: 0 }}>Analytics</h2>
         </div>
         <div className="an__header-tools">
           <label className="eyebrow" style={{ display: "flex", alignItems: "center", gap: 8 }}>

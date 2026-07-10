@@ -6,6 +6,7 @@ import { api } from "../api/client";
 import { useToast } from "../ui/Toast";
 import { useMe } from "../api/hooks";
 import ConfirmDialog from "../ui/ConfirmDialog";
+import PageHeader from "../ui/PageHeader";
 
 type Invite = {
   id: number;
@@ -72,33 +73,19 @@ export default function Settings() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 28, maxWidth: 760 }}>
-      <header>
-        <span className="eyebrow">settings · workspace</span>
-        <h1 style={{ marginTop: 6 }}>
-          <em
-            style={{
-              fontStyle: "italic",
-              color: "var(--accent)",
-              fontWeight: 500,
-            }}
-          >
-            Access
-          </em>{" "}
-          & invites.
-        </h1>
-        <p
-          style={{
-            marginTop: 6,
-            color: "var(--muted)",
-            fontSize: 14,
-            lineHeight: 1.55,
-            maxWidth: 520,
-          }}
-        >
-          Single-tenant workspace. Invite tokens are single-use and expire — copy
-          immediately, share over a secure channel.
-        </p>
-      </header>
+      <PageHeader eyebrow="settings · workspace" title="Access & invites" />
+      <p
+        style={{
+          marginTop: -12,
+          color: "var(--muted)",
+          fontSize: 14,
+          lineHeight: 1.55,
+          maxWidth: 520,
+        }}
+      >
+        Single-tenant workspace. Invite tokens are single-use and expire — copy
+        immediately, share over a secure channel.
+      </p>
 
       <section className="panel">
         <div
@@ -246,76 +233,38 @@ export default function Settings() {
             No active invites.
           </div>
         ) : (
-          <ul
-            style={{
-              listStyle: "none",
-              margin: 0,
-              padding: 0,
-              display: "flex",
-              flexDirection: "column",
-              gap: 6,
-            }}
-          >
+          <ul className="row-list">
             {list.map((i) => {
               const exp = fmtExpiry(i.expires_at);
               return (
-                <li
-                  key={i.id}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 14,
-                    padding: "10px 12px",
-                    border: "1px solid var(--rule)",
-                    borderRadius: "var(--radius)",
-                    background: "var(--bg-elev)",
-                  }}
-                >
-                  <span
-                    className={`led led--${exp.tone}`}
-                    style={{ flexShrink: 0 }}
-                  />
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                <li key={i.id} className="row-item">
+                  <span className={`led led--${exp.tone}`} style={{ flexShrink: 0 }} />
+                  <div className="row-item__main">
                     <div
+                      className="row-item__title"
                       style={{
-                        fontSize: 14,
                         color: i.email ? "var(--text)" : "var(--muted)",
                         fontStyle: i.email ? "normal" : "italic",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
                       }}
                     >
                       {i.email || "no email"}
                     </div>
-                    <div
-                      style={{
-                        marginTop: 2,
-                        fontFamily: "var(--font-mono)",
-                        fontSize: 10,
-                        letterSpacing: "0.12em",
-                        textTransform: "uppercase",
-                        color: "var(--muted)",
-                      }}
-                    >
+                    <div className="row-item__sub">
                       id #{i.id} · {exp.label}
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setRevoking(i.id)}
-                    title="Revoke"
-                    aria-label="Revoke invite"
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                      padding: "6px 10px",
-                    }}
-                  >
-                    <Trash2 size={13} strokeWidth={1.8} />
-                    revoke
-                  </button>
+                  <div className="row-item__actions">
+                    <button
+                      type="button"
+                      onClick={() => setRevoking(i.id)}
+                      title="Revoke"
+                      aria-label="Revoke invite"
+                      style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px" }}
+                    >
+                      <Trash2 size={13} strokeWidth={1.8} />
+                      revoke
+                    </button>
+                  </div>
                 </li>
               );
             })}

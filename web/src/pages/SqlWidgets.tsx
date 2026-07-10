@@ -1,12 +1,14 @@
 import { useRef, useState } from "react";
 import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import { sql as sqlLang } from "@codemirror/lang-sql";
+import { X } from "lucide-react";
 import {
   useSqlWidgets, useSqlDataSources, useSqlPreview, useSqlSchema,
   useCreateSqlWidget, useUpdateSqlWidget, useDeleteSqlWidget,
 } from "../api/sqlWidgets";
 import type { SqlWidget, PreviewResult, SqlVizKind } from "../api/sqlWidgets";
 import ConfirmDialog from "../ui/ConfirmDialog";
+import PageHeader from "../ui/PageHeader";
 import SchemaTree from "../analytics/rail/SchemaTree";
 
 export default function SqlWidgets() {
@@ -18,43 +20,33 @@ export default function SqlWidgets() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <div>
-          <span className="eyebrow">admin · sql widgets</span>
-          <h1 style={{ marginTop: 6 }}>Custom SQL widgets</h1>
-        </div>
-        <button type="button" onClick={() => setEditing("new")}>+ New widget</button>
-      </header>
+      <PageHeader
+        eyebrow="admin · sql widgets"
+        title="Custom SQL widgets"
+        actions={
+          <button type="button" onClick={() => setEditing("new")}>+ New widget</button>
+        }
+      />
 
       {widgets.length === 0 ? (
         <div style={{ color: "var(--muted)" }}>No SQL widgets yet.</div>
       ) : (
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-          <thead>
-            <tr>
-              <th style={th}>Name</th>
-              <th style={th}>Data source</th>
-              <th style={th}>Viz</th>
-              <th style={th}>Updated</th>
-              <th style={th}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {widgets.map(w => (
-              <tr key={w.id}>
-                <td style={td}>{w.name}</td>
-                <td style={td}>{w.data_source}</td>
-                <td style={td}>{w.viz}</td>
-                <td style={td}>{new Date(w.updated_at).toLocaleString()}</td>
-                <td style={td}>
-                  <button type="button" onClick={() => setEditing(w)}>Edit</button>
-                  {" "}
-                  <button type="button" onClick={() => setDeleting(w)}>Delete</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <ul className="row-list">
+          {widgets.map((w) => (
+            <li key={w.id} className="row-item">
+              <div className="row-item__main">
+                <div className="row-item__title">{w.name}</div>
+                <div className="row-item__sub">
+                  <span>{w.data_source}</span> · {w.viz} · updated {new Date(w.updated_at).toLocaleString()}
+                </div>
+              </div>
+              <div className="row-item__actions">
+                <button type="button" onClick={() => setEditing(w)}>Edit</button>
+                <button type="button" onClick={() => setDeleting(w)}>Delete</button>
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
 
       {editing && <Editor widget={editing} onClose={() => setEditing(null)} />}
@@ -160,8 +152,42 @@ function Editor({
   }
 
   return (
-    <aside style={drawer}>
-      <h3>{isNew ? "New SQL widget" : `Edit: ${(widget as SqlWidget).name}`}</h3>
+    <>
+      <div
+        data-testid="sql-widget-editor-backdrop"
+        onClick={onClose}
+        style={{
+          position: "fixed",
+          inset: 0,
+          background: "color-mix(in srgb, var(--ink) 30%, transparent)",
+          zIndex: 29,
+          animation: "fadeUp 200ms ease-out both",
+        }}
+      />
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label={isNew ? "New SQL widget" : `Edit ${(widget as SqlWidget).name}`}
+        onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
+        style={{ ...drawer, animation: "fadeUp 240ms ease-out both", boxShadow: "var(--shadow-md)" }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <div className="eyebrow">sql widget</div>
+            <h3 style={{ marginTop: 4, marginBottom: 0 }}>
+              {isNew ? "New SQL widget" : `Edit: ${(widget as SqlWidget).name}`}
+            </h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close editor"
+            title="Close"
+            style={{ width: 30, height: 30, padding: 0, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+          >
+            <X size={14} strokeWidth={1.8} />
+          </button>
+        </div>
 
       <label htmlFor="sw-name">Name</label>
       <input id="sw-name" value={name} onChange={e => setName(e.target.value)} />
@@ -232,7 +258,8 @@ function Editor({
           setOptions={setOptions}
         />
       )}
-    </aside>
+      </aside>
+    </>
   );
 }
 
@@ -294,14 +321,6 @@ function PreviewArea({
     </div>
   );
 }
-
-const th: React.CSSProperties = {
-  textAlign: "left", padding: "6px 8px",
-  borderBottom: "1px solid var(--rule)", fontWeight: 500,
-};
-const td: React.CSSProperties = {
-  padding: "6px 8px", borderBottom: "1px solid var(--rule-faint, var(--rule))",
-};
 
 const drawer: React.CSSProperties = {
   position: "fixed", top: 0, right: 0, bottom: 0, width: 480,

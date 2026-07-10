@@ -45,6 +45,18 @@ describe("SqlWidgets page", () => {
     expect(screen.getByText("Top users")).toBeInTheDocument();
     expect(screen.getByText("sportly")).toBeInTheDocument();
   });
+  it("renders widgets as row-list items, not a <table>", () => {
+    vi.spyOn(hooks, "useSqlWidgets").mockReturnValue({
+      data: [{ id: 1, name: "Top users", description: "desc", data_source: "sportly",
+                sql: "SELECT 1", viz: "table", options: {}, created_at: "", updated_at: "" }],
+      isLoading: false,
+    } as any);
+    vi.spyOn(hooks, "useSqlDataSources").mockReturnValue({ data: [], isLoading: false } as any);
+    vi.spyOn(hooks, "useDeleteSqlWidget").mockReturnValue({ mutateAsync: vi.fn() } as any);
+    wrap(<SqlWidgets />);
+    expect(screen.queryByRole("table")).toBeNull();
+    expect(screen.getByText("Top users")).toBeInTheDocument();
+  });
   it("shows empty state when no widgets", () => {
     vi.spyOn(hooks, "useSqlWidgets").mockReturnValue({ data: [], isLoading: false } as any);
     vi.spyOn(hooks, "useSqlDataSources").mockReturnValue({ data: [], isLoading: false } as any);
@@ -55,6 +67,21 @@ describe("SqlWidgets page", () => {
 });
 
 describe("SqlWidgets editor", () => {
+  it("closes on backdrop click", () => {
+    vi.spyOn(hooks, "useSqlWidgets").mockReturnValue({ data: [], isLoading: false } as any);
+    vi.spyOn(hooks, "useSqlDataSources").mockReturnValue({ data: [], isLoading: false } as any);
+    vi.spyOn(hooks, "useSqlPreview").mockReturnValue({ mutateAsync: vi.fn(), isPending: false } as any);
+    vi.spyOn(hooks, "useCreateSqlWidget").mockReturnValue({ mutateAsync: vi.fn() } as any);
+    vi.spyOn(hooks, "useUpdateSqlWidget").mockReturnValue({ mutateAsync: vi.fn() } as any);
+    vi.spyOn(hooks, "useDeleteSqlWidget").mockReturnValue({ mutateAsync: vi.fn() } as any);
+
+    wrap(<SqlWidgets />);
+    fireEvent.click(screen.getByText("+ New widget"));
+    expect(screen.getByLabelText("Name")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("sql-widget-editor-backdrop"));
+    expect(screen.queryByLabelText("Name")).toBeNull();
+  });
+
   it("disables Save until a successful preview matches the current SQL", async () => {
     const previewMock = vi.fn().mockResolvedValue({
       columns: ["v"], rows: [{ v: 1 }], truncated: false, durationMs: 1,
