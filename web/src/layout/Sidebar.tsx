@@ -134,28 +134,47 @@ export default function Sidebar() {
       <div
         style={{
           display: "flex",
+          flexDirection: collapsed ? "column" : "row",
           alignItems: "center",
           justifyContent: collapsed ? "center" : "space-between",
           paddingLeft: collapsed ? 0 : 6,
-          gap: 8,
+          gap: collapsed ? 10 : 8,
         }}
       >
-        {!collapsed && (
-          <div>
-            <div
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: 22,
-                lineHeight: 1,
-                letterSpacing: "-0.02em",
-                fontStyle: "italic",
-                fontWeight: 500,
-              }}
-            >
-              Observatory
-            </div>
-            <div className="eyebrow" style={{ marginTop: 6, paddingLeft: 0 }}>
-              v0.1 · ops
+        {collapsed ? (
+          <img
+            src="/icon.svg"
+            alt="Observatory"
+            width={32}
+            height={32}
+            style={{ display: "block", borderRadius: 8 }}
+          />
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <img
+              src="/icon.svg"
+              alt=""
+              aria-hidden
+              width={28}
+              height={28}
+              style={{ display: "block", borderRadius: 7, flexShrink: 0 }}
+            />
+            <div>
+              <div
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: 22,
+                  lineHeight: 1,
+                  letterSpacing: "-0.02em",
+                  fontStyle: "italic",
+                  fontWeight: 500,
+                }}
+              >
+                Observatory
+              </div>
+              <div className="eyebrow" style={{ marginTop: 6, paddingLeft: 0 }}>
+                v0.1 · ops
+              </div>
             </div>
           </div>
         )}
