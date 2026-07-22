@@ -40,7 +40,7 @@ async function pollApp(app) {
     checkHealth(app.health_url)
       .then(async (h) => {
         await persistSample(app.slug, "health_ok", h.ok ? 1 : 0);
-        await handleHealthSample(app.slug, h.ok);
+        await handleHealthSample(app, h.ok);
       })
       .catch((e) => errors.push({ k: "health", m: e.message })),
     ...(app.kpis || []).map((kpi) =>

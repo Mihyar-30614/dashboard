@@ -28,13 +28,13 @@ export function alertRecipient() {
   return process.env.ALERT_EMAIL || process.env.ADMIN_EMAIL || null;
 }
 
-export async function sendAlertEmail(subject, text) {
+export async function sendAlertEmail(subject, text, html) {
   const to = alertRecipient();
   const transport = getMailer();
   if (!transport || !to) {
     console.warn(`alert_email_skipped (smtp or recipient unconfigured): ${subject}`);
     return;
   }
-  await transport.sendMail({ from: FROM, to, subject, text });
+  await transport.sendMail({ from: FROM, to, subject, text, ...(html ? { html } : {}) });
   console.info(`alert_email_sent to=${to} subject=${JSON.stringify(subject)}`);
 }

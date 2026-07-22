@@ -1,5 +1,6 @@
 import { query } from "./db.js";
 import * as mailer from "./mailer.js";
+import { buildAlertEmail } from "./emailTemplates.js";
 
 export const FAIL_THRESHOLD = 3;
 
@@ -21,27 +22,33 @@ export function computeTransition(status, ok, failCount, threshold) {
 }
 
 async function loadStatus(slug) {
-  if (statusCache.has(slug)) return statusCache.get(slug);
+  if (statusCache.has(slug)) return statusCache.get(slug).status;
   const { rows } = await query(
-    `SELECT status FROM alert_state WHERE app_slug=$1`,
+    `SELECT status, changed_at FROM alert_state WHERE app_slug=$1`,
     [slug],
   );
-  const status = rows[0]?.status ?? "up";
-  statusCache.set(slug, status);
-  return status;
+  const entry = { status: rows[0]?.status ?? "up", changedAt: rows[0]?.changed_at ?? null };
+  statusCache.set(slug, entry);
+  return entry.status;
 }
 
-async function saveStatus(slug, status) {
-  statusCache.set(slug, status);
+function loadChangedAt(slug) {
+  return statusCache.get(slug)?.changedAt ?? null;
+}
+
+async function saveStatus(slug, status, changedAt) {
+  statusCache.set(slug, { status, changedAt });
   await query(
     `INSERT INTO alert_state(app_slug, status, changed_at)
-     VALUES ($1, $2, NOW())
-     ON CONFLICT (app_slug) DO UPDATE SET status=$2, changed_at=NOW()`,
-    [slug, status],
+     VALUES ($1, $2, $3)
+     ON CONFLICT (app_slug) DO UPDATE SET status=$2, changed_at=$3`,
+    [slug, status, changedAt],
   );
 }
 
-export async function handleHealthSample(slug, ok) {
+// app: { slug, label, health_url }
+export async function handleHealthSample(app, ok) {
+  const slug = app.slug;
   const streak = ok ? 0 : (failStreaks.get(slug) ?? 0) + 1;
   failStreaks.set(slug, streak);
 
@@ -49,17 +56,24 @@ export async function handleHealthSample(slug, ok) {
   const transition = computeTransition(status, ok, streak, FAIL_THRESHOLD);
   if (!transition) return;
 
-  await saveStatus(slug, transition);
-  const subject =
-    transition === "down"
-      ? `[dashboard] ${slug} is DOWN`
-      : `[dashboard] ${slug} is back up`;
-  const text =
-    transition === "down"
-      ? `Health checks for ${slug} failed ${FAIL_THRESHOLD} times in a row (~${(FAIL_THRESHOLD * 30) / 60} min). Last check just failed.`
-      : `Health check for ${slug} succeeded again; it was previously alerting as down.`;
+  const downSince = transition === "up" ? loadChangedAt(slug) : null;
+  const now = new Date();
+  await saveStatus(slug, transition, now);
+
+  const { subject, text, html } = buildAlertEmail({
+    transition,
+    label: app.label,
+    slug,
+    healthUrl: app.health_url,
+    failCount: streak,
+    threshold: FAIL_THRESHOLD,
+    downSince,
+    now,
+    dashboardUrl: process.env.DASHBOARD_URL || null,
+  });
+
   try {
-    await mailer.sendAlertEmail(subject, text);
+    await mailer.sendAlertEmail(subject, text, html);
   } catch (e) {
     console.error("alert_email_failed", slug, e.message);
   }

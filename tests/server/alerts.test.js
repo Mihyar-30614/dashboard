@@ -23,6 +23,8 @@ describe('computeTransition', () => {
 });
 
 describe('handleHealthSample', () => {
+  const app = { slug: 'sportly', label: 'Sportly', health_url: 'http://localhost:4003/health' };
+
   beforeEach(async () => {
     _resetForTests();
     await query('TRUNCATE alert_state');
@@ -31,30 +33,32 @@ describe('handleHealthSample', () => {
 
   it('emails once after three consecutive failures and records state', async () => {
     const send = vi.spyOn(mailer, 'sendAlertEmail').mockResolvedValue(undefined);
-    for (let i = 0; i < 5; i++) await handleHealthSample('sportly', false);
+    for (let i = 0; i < 5; i++) await handleHealthSample(app, false);
     expect(send).toHaveBeenCalledTimes(1);
     expect(send.mock.calls[0][0]).toMatch(/down/i);
+    expect(send.mock.calls[0][2]).toMatch(/<html/i);
     const { rows } = await query(`SELECT status FROM alert_state WHERE app_slug='sportly'`);
     expect(rows[0].status).toBe('down');
   });
 
   it('emails recovery and flips state back up', async () => {
     const send = vi.spyOn(mailer, 'sendAlertEmail').mockResolvedValue(undefined);
-    for (let i = 0; i < 3; i++) await handleHealthSample('sportly', false);
-    await handleHealthSample('sportly', true);
+    for (let i = 0; i < 3; i++) await handleHealthSample(app, false);
+    await handleHealthSample(app, true);
     expect(send).toHaveBeenCalledTimes(2);
     expect(send.mock.calls[1][0]).toMatch(/up|recovered/i);
+    expect(send.mock.calls[1][2]).toMatch(/<html/i);
     const { rows } = await query(`SELECT status FROM alert_state WHERE app_slug='sportly'`);
     expect(rows[0].status).toBe('up');
   });
 
   it('healthy ticks reset the failure streak', async () => {
     const send = vi.spyOn(mailer, 'sendAlertEmail').mockResolvedValue(undefined);
-    await handleHealthSample('sportly', false);
-    await handleHealthSample('sportly', false);
-    await handleHealthSample('sportly', true);
-    await handleHealthSample('sportly', false);
-    await handleHealthSample('sportly', false);
+    await handleHealthSample(app, false);
+    await handleHealthSample(app, false);
+    await handleHealthSample(app, true);
+    await handleHealthSample(app, false);
+    await handleHealthSample(app, false);
     expect(send).not.toHaveBeenCalled();
   });
 });
