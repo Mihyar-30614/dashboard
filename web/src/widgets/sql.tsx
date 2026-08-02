@@ -23,6 +23,29 @@ const COLORS = [
   "var(--chart-6)",
 ];
 
+type AxisOptions = { xCol?: string; yCol?: string | string[] };
+
+// Options are stored per widget and can go stale when the SQL is edited to
+// rename a column. Fall back to the live result columns instead of charting a
+// dataKey that resolves to undefined on every row.
+function resolveAxes(result: SqlRunResult, options?: AxisOptions) {
+  const known = (c: string) => result.columns.includes(c);
+  const xCol =
+    options?.xCol && known(options.xCol)
+      ? options.xCol
+      : (result.columns[0] ?? "x");
+  const requested = Array.isArray(options?.yCol)
+    ? options.yCol
+    : options?.yCol
+      ? [options.yCol]
+      : [];
+  const yCols = requested.filter(known);
+  return {
+    xCol,
+    yCols: yCols.length ? yCols : result.columns.filter((c) => c !== xCol),
+  };
+}
+
 export function SqlNumber({
   result,
   options = {},
@@ -54,14 +77,9 @@ export function SqlLine({
   options,
 }: {
   result: SqlRunResult;
-  options?: { xCol?: string; yCol?: string | string[] };
+  options?: AxisOptions;
 }) {
-  const xCol = options?.xCol ?? result.columns[0] ?? "x";
-  const yCols = Array.isArray(options?.yCol)
-    ? options.yCol
-    : options?.yCol
-      ? [options.yCol]
-      : result.columns.filter((c) => c !== xCol);
+  const { xCol, yCols } = resolveAxes(result, options);
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -89,14 +107,9 @@ export function SqlBar({
   options,
 }: {
   result: SqlRunResult;
-  options?: { xCol?: string; yCol?: string | string[] };
+  options?: AxisOptions;
 }) {
-  const xCol = options?.xCol ?? result.columns[0] ?? "x";
-  const yCols = Array.isArray(options?.yCol)
-    ? options.yCol
-    : options?.yCol
-      ? [options.yCol]
-      : result.columns.filter((c) => c !== xCol);
+  const { xCol, yCols } = resolveAxes(result, options);
 
   return (
     <ResponsiveContainer width="100%" height="100%">

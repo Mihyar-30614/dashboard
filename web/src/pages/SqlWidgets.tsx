@@ -76,6 +76,22 @@ function hash(s: string) {
   return h;
 }
 
+// Editing the SQL can rename a column out from under a saved xCol/yCol. A
+// select whose value matches no <option> renders blank and never fires
+// onChange, so the stale name would silently survive the next save.
+function pruneAxisOptions(options: any, columns: string[]) {
+  const next = { ...options };
+  if (next.xCol && !columns.includes(next.xCol)) delete next.xCol;
+  if (Array.isArray(next.yCol)) {
+    const kept = next.yCol.filter((c: string) => columns.includes(c));
+    if (kept.length) next.yCol = kept;
+    else delete next.yCol;
+  } else if (next.yCol && !columns.includes(next.yCol)) {
+    delete next.yCol;
+  }
+  return next;
+}
+
 function Editor({
   widget, onClose,
 }: {
@@ -127,9 +143,11 @@ function Editor({
         setPreview(null);
         setPreviewedHash(null);
       } else {
-        setPreview(r as PreviewResult);
+        const result = r as PreviewResult;
+        setPreview(result);
         setPreviewedHash(hash(sql));
-        setViz((r as PreviewResult).inferred_viz);
+        setViz(result.inferred_viz);
+        setOptions(pruneAxisOptions(options, result.columns));
       }
     } catch (e: any) {
       setPreviewError(e.message || "preview failed");
@@ -297,7 +315,8 @@ function PreviewArea({
           </select>
           <label htmlFor="sw-ycol">y column</label>
           <select id="sw-ycol" value={options.yCol ?? ""}
-                  onChange={e => setOptions({ ...options, yCol: e.target.value })}>
+                  onChange={e => setOptions({ ...options, yCol: e.target.value || undefined })}>
+            <option value="">auto (all other columns)</option>
             {result.columns.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </>
