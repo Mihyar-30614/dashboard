@@ -32,7 +32,8 @@ export default function App() {
         path="/*"
         element={
           <Protected>
-            <Shell />
+            {" "}
+            <Shell />{" "}
           </Protected>
         }
       >
