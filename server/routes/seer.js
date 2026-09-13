@@ -36,6 +36,10 @@ router.all(/.*/, async (req, res) => {
   };
   if (hasBody) headers["Content-Type"] = req.headers["content-type"] || "application/json";
   if (req.headers["x-request-id"]) headers["X-Request-ID"] = req.headers["x-request-id"];
+  // Scope Seer conversations per dashboard user behind the shared service key.
+  if (req.user?.id != null) {
+    headers["X-Seer-End-User"] = String(req.user.id);
+  }
 
   const controller = new AbortController();
   req.on("close", () => controller.abort());
