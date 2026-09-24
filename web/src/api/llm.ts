@@ -217,6 +217,29 @@ export const llm = {
       isQueryFailureBody,
     ),
 
+  /** Full result of an answered question as CSV, re-run on Seer (every row,
+   * values whole). Refused with an error when over Seer's export limit. */
+  exportCsv: async (
+    db_name: string,
+    query_id: number,
+  ): Promise<{ blob: Blob; rowCount: number | null }> => {
+    const res = await fetch(`${BASE}${db(db_name)}/queries/${query_id}/export.csv`, {
+      credentials: "same-origin",
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => res.statusText);
+      let parsed: unknown = undefined;
+      try {
+        parsed = text ? JSON.parse(text) : undefined;
+      } catch {
+        parsed = undefined;
+      }
+      throw new LlmApiError(res.status, errorMessage(parsed, text, res.statusText));
+    }
+    const count = res.headers.get("x-seer-row-count");
+    return { blob: await res.blob(), rowCount: count == null ? null : Number(count) };
+  },
+
   queryTrace: (db_name: string, query_id: number) =>
     req<{ db_name: string; query_id: number; trace: QueryTrace }>(
       "GET",

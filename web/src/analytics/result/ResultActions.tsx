@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { QA, ResultTab } from "../types";
-import type { SavedQueryRequest } from "../../api/llm";
+import { llm, type SavedQueryRequest } from "../../api/llm";
 import { toCsv } from "../../lib/format";
 import PinToDashboard from "./PinToDashboard";
 
@@ -22,6 +22,7 @@ export default function ResultActions({
   const [tags, setTags] = useState("");
   const [isPublic, setIsPublic] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const canCopy = activeTab !== "chart" && activeTab !== "details";
   const canCsv = qa.data.length > 0;
@@ -51,17 +52,37 @@ export default function ResultActions({
     }
   }
 
-  function download() {
-    const csv = toCsv(qa.data);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  function saveBlob(blob: Blob, filename: string) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${dbName}-${qa.query_id ?? new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  }
+
+  /** The full result from Seer when the answer has a query id (the rows on
+   * screen can be cut off at the row limit, long values shortened); the
+   * rows on screen otherwise. */
+  async function download() {
+    if (qa.query_id == null) {
+      const csv = toCsv(qa.data);
+      saveBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }),
+        `${dbName}-${new Date().toISOString().slice(0, 10)}.csv`);
+      return;
+    }
+    setExporting(true);
+    try {
+      const { blob, rowCount } = await llm.exportCsv(dbName, qa.query_id);
+      saveBlob(blob, `${dbName}-query-${qa.query_id}.csv`);
+      onToast(rowCount == null ? "Exported" : `Exported ${rowCount.toLocaleString()} rows`, "ok");
+    } catch (e) {
+      onToast("Export failed: " + ((e as Error)?.message ?? "unknown"), "err");
+    } finally {
+      setExporting(false);
+    }
   }
 
   async function save(e: React.FormEvent) {
@@ -101,8 +122,13 @@ export default function ResultActions({
       <button type="button" onClick={copy} disabled={!canCopy}>
         copy
       </button>
-      <button type="button" onClick={download} disabled={!canCsv}>
-        ⬇ csv
+      <button
+        type="button"
+        onClick={download}
+        disabled={!canCsv || exporting}
+        title={qa.query_id != null ? "Download every row of this result (re-run on Seer)" : "Download these rows"}
+      >
+        {exporting ? "exporting…" : "⬇ csv"}
       </button>
       <PinToDashboard
         qa={qa}

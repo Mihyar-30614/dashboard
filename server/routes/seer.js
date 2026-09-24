@@ -1,3 +1,4 @@
+import { Readable } from "node:stream";
 import { Router } from "express";
 import { requireAuth } from "../auth/session.js";
 
@@ -17,6 +18,8 @@ const HOP_BY_HOP = new Set([
   "upgrade",
   "host",
   "content-length",
+  // fetch() already decoded the body, so its original encoding no longer applies.
+  "content-encoding",
 ]);
 
 router.use(requireAuth);
@@ -41,8 +44,12 @@ router.all(/.*/, async (req, res) => {
     headers["X-Seer-End-User"] = String(req.user.id);
   }
 
+  // Abort the upstream request when the client goes away mid-response.
+  // (req "close" fires once the request body is read, so it cannot signal that.)
   const controller = new AbortController();
-  req.on("close", () => controller.abort());
+  res.on("close", () => {
+    if (!res.writableEnded) controller.abort();
+  });
 
   try {
     const upstream = await fetch(url, {
@@ -56,8 +63,18 @@ router.all(/.*/, async (req, res) => {
     upstream.headers.forEach((value, key) => {
       if (!HOP_BY_HOP.has(key.toLowerCase())) res.setHeader(key, value);
     });
-    const buf = Buffer.from(await upstream.arrayBuffer());
-    res.send(buf);
+    // Stream the body through: exports can be large, and buffering them
+    // here would hold the whole file in this process's memory.
+    if (!upstream.body) {
+      res.end();
+      return;
+    }
+    const body = Readable.fromWeb(upstream.body);
+    body.on("error", (err) => {
+      if (!controller.signal.aborted) console.error("seer proxy stream error", err);
+      res.destroy(err);
+    });
+    body.pipe(res);
   } catch (err) {
     if (controller.signal.aborted) return;
     console.error("seer proxy error", err);
