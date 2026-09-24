@@ -12,6 +12,7 @@ import { useSchema } from "../analytics/hooks/useSchema";
 import LeftRail from "../analytics/rail/LeftRail";
 import RailSection from "../analytics/rail/RailSection";
 import HistoryList from "../analytics/rail/HistoryList";
+import ThreadPicker from "../analytics/rail/ThreadPicker";
 import DiscoverList from "../analytics/rail/DiscoverList";
 import SavedList from "../analytics/rail/SavedList";
 import SchemaTree from "../analytics/rail/SchemaTree";
@@ -138,7 +139,8 @@ export default function Analytics() {
       const ac = new AbortController();
       abortRef.current = ac;
       try {
-        const r: QueryResult = await llm.query(db, q, useCtx, ac.signal);
+        const r: QueryResult = await llm.query(db, q, useCtx, ac.signal, conv.threadId);
+        conv.refreshThreads();
         conv.setHistory((h) =>
           h.map((qa) =>
             qa.id === id
@@ -180,7 +182,7 @@ export default function Analytics() {
       if (!db) return;
       setPendingId(qa.id);
       try {
-        const r: QueryResult = await llm.query(db, qa.question, useCtx);
+        const r: QueryResult = await llm.query(db, qa.question, useCtx, undefined, conv.threadId);
         conv.setHistory((h) =>
           h.map((x) =>
             x.id === qa.id
@@ -358,10 +360,24 @@ export default function Analytics() {
             />
             context
           </label>
+          <ThreadPicker
+            threadId={conv.threadId}
+            threads={conv.threads}
+            onSwitch={(id) => {
+              conv.switchThread(id);
+              setActiveId(null);
+            }}
+            onNew={() => {
+              conv.newThread();
+              setActiveId(null);
+            }}
+            disabled={!db}
+          />
           <button
             type="button"
             onClick={() => conv.clear().then(() => toast.success("Conversation cleared"))}
             disabled={!db}
+            title="Clear this conversation"
           >
             Clear
           </button>

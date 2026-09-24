@@ -188,6 +188,15 @@ export type DiscoverQuestion = {
   avg_response_time_ms?: number | null;
 };
 
+/** One of the caller's conversation threads (GET .../conversations). */
+export type ConversationThread = {
+  conversation_id: string;
+  title: string;
+  turns: number;
+  started_at: string | null;
+  last_at: string | null;
+};
+
 export type ConversationTurn = {
   role?: string;
   question?: string;
@@ -208,13 +217,20 @@ export const llm = {
     question: string,
     use_context: boolean,
     signal?: AbortSignal,
+    conversation_id?: string,
   ) =>
     req<QueryResult>(
       "POST",
       `${db(db_name)}/query`,
-      { question, use_context },
+      { question, use_context, ...(conversation_id ? { conversation_id } : {}) },
       signal,
       isQueryFailureBody,
+    ),
+
+  listConversations: (db_name: string) =>
+    req<{ db_name: string; conversations: ConversationThread[]; count: number }>(
+      "GET",
+      `${db(db_name)}/conversations`,
     ),
 
   /** Full result of an answered question as CSV, re-run on Seer (every row,
@@ -246,16 +262,17 @@ export const llm = {
       `${db(db_name)}/queries/${query_id}/trace`,
     ),
 
-  getConversation: (db_name: string) =>
+  getConversation: (db_name: string, conversation_id?: string) =>
     req<{ db_name: string; history: ConversationTurn[]; count: number }>(
       "GET",
-      `${db(db_name)}/conversation`,
+      `${db(db_name)}/conversation${buildQuery({ conversation_id })}`,
     ),
 
-  clearConversation: (db_name: string) =>
+  /** Clears one thread, or every thread of the caller when no id is given. */
+  clearConversation: (db_name: string, conversation_id?: string) =>
     req<{ db_name: string; message: string }>(
       "DELETE",
-      `${db(db_name)}/conversation`,
+      `${db(db_name)}/conversation${buildQuery({ conversation_id })}`,
     ),
 
   discover: (db_name: string, limit = 8) =>

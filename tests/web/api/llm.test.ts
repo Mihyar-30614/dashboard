@@ -95,3 +95,18 @@ describe("seer client csv export", () => {
     expect(err.message).toMatch(/900,000 rows/);
   });
 });
+
+describe("seer client conversation threads", () => {
+  it("sends the thread with a question and scopes reads and clears to it", async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ question: "q", answer: "a", data: [], count: 0, history: [] }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await llm.query("sportly", "q", true, undefined, "tab-1");
+    expect(JSON.parse(String((fetchMock.mock.calls[0][1] as RequestInit).body))).toMatchObject({ conversation_id: "tab-1" });
+    await llm.getConversation("sportly", "tab-1");
+    expect(String(fetchMock.mock.calls[1][0])).toMatch(/\/conversation\?conversation_id=tab-1$/);
+    await llm.clearConversation("sportly", "tab-1");
+    expect(String(fetchMock.mock.calls[2][0])).toMatch(/\/conversation\?conversation_id=tab-1$/);
+    await llm.query("sportly", "q", true);
+    expect(JSON.parse(String((fetchMock.mock.calls[3][1] as RequestInit).body))).not.toHaveProperty("conversation_id");
+  });
+});

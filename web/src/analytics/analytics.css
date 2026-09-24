@@ -22,8 +22,18 @@
 .an__header-tools {
   margin-left: auto;
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-3);
   align-items: baseline;
+}
+
+.an__thread {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+}
+.an__thread select {
+  max-width: 260px;
 }
 
 .an__db-select {
