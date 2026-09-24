@@ -8,6 +8,7 @@ import JsonView from "./JsonView";
 import RelatedChips from "./RelatedChips";
 import ResultActions from "./ResultActions";
 import AnswerText from "./AnswerText";
+import Caveats from "./Caveats";
 
 const TABS: ResultTab[] = ["chart", "table", "sql", "json"];
 
@@ -135,6 +136,8 @@ export default function ResultPane({
           ))}
         </ul>
       )}
+
+      <Caveats caveats={qa.caveats} />
 
       <RelatedChips related={qa.related} onPick={onRelated} />
 

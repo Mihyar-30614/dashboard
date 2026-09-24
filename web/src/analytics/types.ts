@@ -10,6 +10,7 @@ export type QA = {
   data: Row[];
   count: number;
   warnings: string[] | null;
+  caveats?: string[] | null;
   related: string[] | null;
   query_id: number | null;
   feedback?: "up" | "down";

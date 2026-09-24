@@ -63,3 +63,14 @@ describe("seer client error contract", () => {
     expect(err.message).toBe("Internal Server Error");
   });
 });
+
+describe("seer client caveats", () => {
+  it("passes answer caveats through", async () => {
+    respond(200, {
+      question: "q", sql: "SELECT 1", answer: "a", data: [], count: 0,
+      caveats: ["Served from the answer cache; the data may have changed since."],
+    });
+    const r = await llm.query("sportly", "q", false);
+    expect(r.caveats).toEqual(["Served from the answer cache; the data may have changed since."]);
+  });
+});

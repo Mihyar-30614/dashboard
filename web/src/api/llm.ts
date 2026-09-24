@@ -132,6 +132,8 @@ export type QueryResult = {
   validation_warnings?: string[] | null;
   related_questions?: string[] | null;
   query_id?: number | null;
+  /** Limitations of this answer (rows cut off, retries, cached, fallbacks). */
+  caveats?: string[] | null;
 };
 
 export type DiscoverQuestion = {
