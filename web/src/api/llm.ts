@@ -136,6 +136,47 @@ export type QueryResult = {
   caveats?: string[] | null;
 };
 
+export type TraceStage = {
+  stage: string;
+  ms?: number;
+  error_code?: string;
+  top_k?: number;
+  rows?: number;
+  truncated?: boolean;
+  candidates?: Array<{
+    table?: string;
+    id?: string;
+    score?: number | null;
+    semantic?: number | null;
+    keyword?: number | null;
+  }>;
+  [k: string]: unknown;
+};
+
+/** How Seer answered one question (GET .../queries/{id}/trace). Holds no
+ * question, SQL, or row text. */
+export type QueryTrace = {
+  version?: number;
+  total_ms?: number;
+  stages?: TraceStage[];
+  tokens?: Record<string, { calls: number; prompt: number; completion: number }>;
+  fallbacks?: string[];
+  attempts?: string[];
+  path?: string;
+  cache?: string;
+  retrieval_query?: string;
+  tables_kept?: string[];
+  tables_allowed?: string[];
+  examples_used?: string[];
+  examples_dropped?: Record<string, number>;
+  error_code?: string | null;
+  rows?: number;
+  truncated?: boolean;
+  retry_count?: number;
+  versions?: { model?: string | null; prompts?: string; embedding_generation?: number | null };
+  [k: string]: unknown;
+};
+
 export type DiscoverQuestion = {
   question: string;
   category?: string | null;
@@ -174,6 +215,12 @@ export const llm = {
       { question, use_context },
       signal,
       isQueryFailureBody,
+    ),
+
+  queryTrace: (db_name: string, query_id: number) =>
+    req<{ db_name: string; query_id: number; trace: QueryTrace }>(
+      "GET",
+      `${db(db_name)}/queries/${query_id}/trace`,
     ),
 
   getConversation: (db_name: string) =>

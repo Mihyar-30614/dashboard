@@ -9,8 +9,9 @@ import RelatedChips from "./RelatedChips";
 import ResultActions from "./ResultActions";
 import AnswerText from "./AnswerText";
 import Caveats from "./Caveats";
+import EvidenceView from "./EvidenceView";
 
-const TABS: ResultTab[] = ["chart", "table", "sql", "json"];
+const TABS: ResultTab[] = ["chart", "table", "sql", "json", "details"];
 
 export default function ResultPane({
   qa,
@@ -71,6 +72,12 @@ export default function ResultPane({
           <span>{qa.question}</span>
         </div>
         <div className="an-result__error">{qa.error}</div>
+        {qa.query_id != null && (
+          <details className="an-evidence__disclosure">
+            <summary>details</summary>
+            <EvidenceView dbName={dbName} queryId={qa.query_id} />
+          </details>
+        )}
       </section>
     );
   }
@@ -87,6 +94,8 @@ export default function ResultPane({
         return <SqlView sql={qa.sql} />;
       case "json":
         return <JsonView rows={qa.data} />;
+      case "details":
+        return <EvidenceView dbName={dbName} queryId={qa.query_id} />;
     }
   })();
 

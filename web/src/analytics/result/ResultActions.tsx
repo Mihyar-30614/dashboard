@@ -23,7 +23,7 @@ export default function ResultActions({
   const [isPublic, setIsPublic] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const canCopy = activeTab !== "chart";
+  const canCopy = activeTab !== "chart" && activeTab !== "details";
   const canCsv = qa.data.length > 0;
 
   async function copy() {

@@ -633,3 +633,54 @@
     display: block !important;
   }
 }
+
+/* === Details (evidence) view === */
+
+.an-evidence {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 12px);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+.an-evidence__h {
+  margin: 0 0 4px;
+  font-size: var(--text-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+}
+.an-evidence__row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 8px;
+  padding: 2px 0;
+}
+.an-evidence__label {
+  color: var(--muted);
+}
+.an-evidence__list {
+  margin: 0;
+  padding-left: 16px;
+}
+.an-evidence__table {
+  width: auto;
+  min-width: 50%;
+}
+.an-evidence__disclosure {
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+.an-evidence__disclosure > summary {
+  cursor: pointer;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+@media (max-width: 640px) {
+  .an-evidence__row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}

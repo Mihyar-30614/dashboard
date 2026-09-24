@@ -1,6 +1,6 @@
 import type { Row, SavedQuery, SchemaInfo } from "../api/llm";
 
-export type ResultTab = "chart" | "table" | "sql" | "json";
+export type ResultTab = "chart" | "table" | "sql" | "json" | "details";
 
 export type QA = {
   id: string;
