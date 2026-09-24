@@ -8,11 +8,26 @@ export class LlmApiError extends Error {
   }
 }
 
+/** Human-readable message from a failed response body (FastAPI `detail`,
+ * Seer `error`, or the proxy's `error`), falling back to the raw text. */
+export function errorMessage(parsed: unknown, text: string, statusText: string): string {
+  if (parsed && typeof parsed === "object") {
+    const o = parsed as Record<string, unknown>;
+    if (typeof o.detail === "string" && o.detail) return o.detail;
+    if (typeof o.error === "string" && o.error) return o.error;
+  }
+  return text || statusText;
+}
+
 async function req<T>(
   method: string,
   path: string,
   body?: unknown,
   signal?: AbortSignal,
+  /** Seer answers some failures (HTTP 4xx/5xx) with the endpoint's normal
+   * body plus an error. When this accepts the body, it is returned instead
+   * of throwing, so callers keep the explanation, SQL, and query_id. */
+  failureBody?: (parsed: unknown) => boolean,
 ): Promise<T> {
   const res = await fetch(BASE + path, {
     method,
@@ -23,10 +38,28 @@ async function req<T>(
   });
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
-    throw new LlmApiError(res.status, text || res.statusText);
+    let parsed: unknown = undefined;
+    try {
+      parsed = text ? JSON.parse(text) : undefined;
+    } catch {
+      parsed = undefined;
+    }
+    if (parsed !== undefined && failureBody?.(parsed)) return parsed as T;
+    throw new LlmApiError(res.status, errorMessage(parsed, text, res.statusText));
   }
   return res.json();
 }
+
+const isObject = (v: unknown): v is Record<string, unknown> =>
+  !!v && typeof v === "object" && !Array.isArray(v);
+
+/** A failed /query still returns a QueryResult with `error` set. */
+export const isQueryFailureBody = (b: unknown): boolean =>
+  isObject(b) && typeof b.error === "string" && "answer" in b;
+
+/** A failed saved-query run still returns `{ result: { error, ... } }`. */
+export const isSavedQueryFailureBody = (b: unknown): boolean =>
+  isObject(b) && isObject(b.result) && typeof b.result.error === "string";
 
 const db = (name: string) => `/api/databases/${encodeURIComponent(name)}`;
 
@@ -94,6 +127,8 @@ export type QueryResult = {
   data: Row[];
   count: number;
   error?: string | null;
+  /** Stable failure kind when `error` is set (e.g. "sql_rejected", "query_timeout"). */
+  error_code?: string | null;
   validation_warnings?: string[] | null;
   related_questions?: string[] | null;
   query_id?: number | null;
@@ -136,6 +171,7 @@ export const llm = {
       `${db(db_name)}/query`,
       { question, use_context },
       signal,
+      isQueryFailureBody,
     ),
 
   getConversation: (db_name: string) =>
@@ -224,11 +260,18 @@ export const llm = {
       req<{
         db_name: string;
         query_id: number;
-        result: { data: Row[]; count: number; error: string | null };
+        result: {
+          data: Row[];
+          count: number;
+          error: string | null;
+          error_code?: string | null;
+        };
       }>(
         "POST",
         `${db(db_name)}/saved-queries/${id}/execute`,
         { parameters: parameters ?? {} },
+        undefined,
+        isSavedQueryFailureBody,
       ),
   },
 };
