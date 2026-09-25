@@ -4,6 +4,8 @@ node_modules/
 .env.test
 web/dist/
 web/tsconfig.tsbuildinfo
+web/test-results/
+web/playwright-report/
 web-prod/
 backups/
 logs/
