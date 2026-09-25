@@ -22,6 +22,9 @@ const HOP_BY_HOP = new Set([
   "content-encoding",
 ]);
 
+// Seer user ids: "7", or several as "7,8". Seer checks them again.
+const SUBJECT_RE = /^[A-Za-z0-9._@-]{1,128}(\s*,\s*[A-Za-z0-9._@-]{1,128}){0,49}$/;
+
 router.use(requireAuth);
 
 router.all(/.*/, async (req, res) => {
@@ -42,6 +45,16 @@ router.all(/.*/, async (req, res) => {
   // Scope Seer conversations per dashboard user behind the shared service key.
   if (req.user?.id != null) {
     headers["X-Seer-End-User"] = String(req.user.id);
+  }
+  // Whose rows the request reads, on databases that keep rows per user. The
+  // dashboard's key is Seer's trusted proxy: it lists each database's users
+  // and names the one picked in the analytics page.
+  const subject = req.headers["x-seer-subject"];
+  if (subject != null && subject !== "") {
+    if (typeof subject !== "string" || !SUBJECT_RE.test(subject.trim())) {
+      return res.status(400).json({ error: "invalid_seer_subject" });
+    }
+    headers["X-Seer-Subject"] = subject.trim();
   }
 
   // Abort the upstream request when the client goes away mid-response.

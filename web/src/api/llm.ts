@@ -19,6 +19,21 @@ export function errorMessage(parsed: unknown, text: string, statusText: string):
   return text || statusText;
 }
 
+/** Seer user ids the analytics page acts for ("7" or "7,8"), sent as
+ * X-Seer-Subject on every request; null on databases without per-user rows. */
+let subject: string | null = null;
+
+export function setSeerSubject(value: string | null): void {
+  subject = value && value.trim() ? value.trim() : null;
+}
+
+function seerHeaders(json: boolean): Record<string, string> | undefined {
+  const h: Record<string, string> = {};
+  if (json) h["content-type"] = "application/json";
+  if (subject) h["x-seer-subject"] = subject;
+  return Object.keys(h).length ? h : undefined;
+}
+
 async function req<T>(
   method: string,
   path: string,
@@ -31,7 +46,7 @@ async function req<T>(
 ): Promise<T> {
   const res = await fetch(BASE + path, {
     method,
-    headers: body ? { "content-type": "application/json" } : undefined,
+    headers: seerHeaders(!!body),
     body: body ? JSON.stringify(body) : undefined,
     credentials: "same-origin",
     signal,
@@ -188,6 +203,17 @@ export type DiscoverQuestion = {
   avg_response_time_ms?: number | null;
 };
 
+/** Users of a database whose rows answers can be limited to (GET .../users). */
+export type DbUsers = {
+  db_name: string;
+  /** False when the database does not keep rows per user: no choice needed. */
+  per_user_rows: boolean;
+  owner_table: string | null;
+  users: Array<{ id: string; label: string }>;
+  /** Whether this dashboard's key may read every user's rows at once. */
+  can_read_all: boolean;
+};
+
 /** One of the caller's conversation threads (GET .../conversations). */
 export type ConversationThread = {
   conversation_id: string;
@@ -227,6 +253,8 @@ export const llm = {
       isQueryFailureBody,
     ),
 
+  listUsers: (db_name: string) => req<DbUsers>("GET", `${db(db_name)}/users`),
+
   listConversations: (db_name: string) =>
     req<{ db_name: string; conversations: ConversationThread[]; count: number }>(
       "GET",
@@ -240,6 +268,7 @@ export const llm = {
     query_id: number,
   ): Promise<{ blob: Blob; rowCount: number | null }> => {
     const res = await fetch(`${BASE}${db(db_name)}/queries/${query_id}/export.csv`, {
+      headers: seerHeaders(false),
       credentials: "same-origin",
     });
     if (!res.ok) {

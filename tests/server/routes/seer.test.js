@@ -8,7 +8,12 @@ let upstream;
 let seen = [];
 beforeAll(async () => {
   upstream = http.createServer((req, res) => {
-    seen.push({ url: req.url, key: req.headers['x-api-key'], endUser: req.headers['x-seer-end-user'] });
+    seen.push({
+      url: req.url,
+      key: req.headers['x-api-key'],
+      endUser: req.headers['x-seer-end-user'],
+      subject: req.headers['x-seer-subject'],
+    });
     if (req.url.endsWith('/export.csv')) {
       res.writeHead(200, { 'content-type': 'text/csv; charset=utf-8', 'x-seer-row-count': '3' });
       res.write('id\r\n');
@@ -47,6 +52,22 @@ describe('seer proxy', () => {
     expect(last.url).toBe('/api/databases/sportly/queries/7/export.csv');
     expect(last.key).toBe('test-key');
     expect(last.endUser).toBeTruthy();
+  });
+
+  it('forwards the chosen Seer user', async () => {
+    const agent = await loggedInAgent();
+    await agent.get('/api/seer/api/databases/sportly/queries/9/other').set('X-Seer-Subject', ' 7, 8 ');
+    expect(seen.at(-1).subject).toBe('7, 8');
+    await agent.get('/api/seer/api/databases/sportly/queries/9/other');
+    expect(seen.at(-1).subject).toBeUndefined();
+  });
+
+  it('rejects a malformed Seer user without calling Seer', async () => {
+    const agent = await loggedInAgent();
+    const before = seen.length;
+    const res = await agent.get('/api/seer/api/databases/sportly/users').set('X-Seer-Subject', "1' OR 1=1");
+    expect(res.status).toBe(400);
+    expect(seen.length).toBe(before);
   });
 
   it('passes error statuses and bodies through', async () => {

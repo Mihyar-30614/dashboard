@@ -6,6 +6,7 @@ import "../analytics/analytics.css";
 import type { QA, ResultTab } from "../analytics/types";
 import { pickTab } from "../analytics/result/pickTab";
 import { useDbList } from "../analytics/hooks/useDbList";
+import { ALL_USERS, useDbUsers } from "../analytics/hooks/useDbUsers";
 import { useConversation } from "../analytics/hooks/useConversation";
 import { useSavedQueries } from "../analytics/hooks/useSavedQueries";
 import { useSchema } from "../analytics/hooks/useSchema";
@@ -37,6 +38,7 @@ export default function Analytics() {
   const [useCtx, setUseCtx] = useState<boolean>(
     () => window.localStorage.getItem(CTX_KEY) !== "0",
   );
+  const users = useDbUsers(db);
   const conv = useConversation(db);
   const saved = useSavedQueries(db);
   const [schemaEnabled, setSchemaEnabled] = useState(false);
@@ -67,7 +69,7 @@ export default function Analytics() {
   }, [railOpen]);
 
   useEffect(() => {
-    if (!db) {
+    if (!db || users.needsChoice) {
       setDiscover([]);
       return;
     }
@@ -83,7 +85,7 @@ export default function Analytics() {
         ),
       )
       .catch(() => setDiscover([]));
-  }, [db]);
+  }, [db, users.subject, users.needsChoice]);
 
   const activeQA = useMemo(
     () => conv.history.find((q) => q.id === activeId) ?? null,
@@ -115,7 +117,7 @@ export default function Analytics() {
 
   const send = useCallback(
     async (text: string) => {
-      if (!db || !text.trim()) return;
+      if (!db || !text.trim() || users.needsChoice) return;
       const q = text.trim();
       setInput("");
       const id = uid();
@@ -172,14 +174,14 @@ export default function Analytics() {
         setPendingId(null);
       }
     },
-    [db, useCtx, conv],
+    [db, useCtx, conv, users.needsChoice],
   );
 
   // Turns restored from the server conversation carry no result rows, so a
   // history pick re-runs the question (seer's query cache keeps this cheap).
   const revive = useCallback(
     async (qa: QA) => {
-      if (!db) return;
+      if (!db || users.needsChoice) return;
       setPendingId(qa.id);
       try {
         const r: QueryResult = await llm.query(db, qa.question, useCtx, undefined, conv.threadId);
@@ -214,12 +216,12 @@ export default function Analytics() {
         setPendingId(null);
       }
     },
-    [db, useCtx, conv],
+    [db, useCtx, conv, users.needsChoice],
   );
 
   const executeSaved = useCallback(
     async (sq: SavedQuery) => {
-      if (!db) return;
+      if (!db || users.needsChoice) return;
       const id = uid();
       const draft: QA = {
         id,
@@ -264,7 +266,7 @@ export default function Analytics() {
         setPendingId(null);
       }
     },
-    [db, saved, conv],
+    [db, saved, conv, users.needsChoice],
   );
 
   async function feedback(correct: boolean) {
@@ -319,7 +321,8 @@ export default function Analytics() {
     return () => window.removeEventListener("keydown", onKey);
   }, [pendingId]);
 
-  const loadErr = dbErr || conv.reloadErr || saved.err;
+  const loadErr = dbErr || users.err || conv.reloadErr || saved.err;
+  const ready = !!db && !users.loading && !users.needsChoice;
 
   return (
     <div className="an">
@@ -352,6 +355,35 @@ export default function Analytics() {
               ))}
             </select>
           </label>
+          {users.info?.per_user_rows && (
+            <label
+              className="eyebrow"
+              style={{ display: "flex", alignItems: "center", gap: 8 }}
+              title={`${db} keeps rows per user (${users.info.owner_table}); answers only read the chosen user's rows`}
+            >
+              user
+              <select
+                className="an__db-select"
+                value={users.subject}
+                onChange={(e) => {
+                  users.setSubject(e.target.value);
+                  // Follow-ups must not reach back into another user's answers.
+                  conv.newThread();
+                  setActiveId(null);
+                }}
+              >
+                <option value="" disabled>
+                  choose…
+                </option>
+                {users.info.users.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.label ? `${u.id} · ${u.label}` : u.id}
+                  </option>
+                ))}
+                {users.info.can_read_all && <option value={ALL_USERS}>All users</option>}
+              </select>
+            </label>
+          )}
           <label className="an__ctx">
             <input
               type="checkbox"
@@ -439,10 +471,14 @@ export default function Analytics() {
             value={input}
             onChange={setInput}
             onSubmit={() => send(input)}
-            disabled={!db}
+            disabled={!ready}
             sending={pendingId !== null}
             placeholder={
-              db ? "Ask a question about " + db + "…" : "Select a database to start"
+              !db
+                ? "Select a database to start"
+                : users.needsChoice
+                  ? "Choose whose data to query (user) first"
+                  : "Ask a question about " + db + "…"
             }
           />
         }
