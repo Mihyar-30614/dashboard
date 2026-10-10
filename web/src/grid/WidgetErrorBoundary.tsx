@@ -46,7 +46,7 @@ export default class WidgetErrorBoundary extends Component<Props, State> {
               lineHeight: 1.5,
             }}
           >
-            <div style={{ color: "var(--bad, #d54a4a)" }}>
+            <div style={{ color: "var(--bad)" }}>
               widget crashed
             </div>
             <div style={{ wordBreak: "break-word" }}>

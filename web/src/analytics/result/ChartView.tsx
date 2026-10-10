@@ -5,11 +5,11 @@ import {
   CartesianGrid,
   Line,
   LineChart,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
+import ChartFill from "../../grid/ChartFill";
 import { formatDateValue, isDateValue, isNumericValue } from "../../lib/format";
 
 type Row = Record<string, unknown>;
@@ -182,56 +182,59 @@ export default function ChartView({
     pick.yKey,
   );
 
+  const chart =
+    pick.kind === "bar" ? (
+      <BarChart data={data} margin={{ top: 10, right: 20, bottom: 10, left: 10 }}>
+        <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" vertical={false} />
+        <XAxis
+          dataKey={pick.xKey}
+          stroke={rule}
+          tick={axisTick}
+          tickLine={false}
+          tickFormatter={(v) => formatDateValue(v) ?? String(v)}
+        />
+        <YAxis stroke={rule} tick={axisTick} tickLine={false} />
+        <Tooltip
+          contentStyle={tooltipStyle}
+          labelStyle={tooltipLabel}
+          itemStyle={tooltipItem}
+          cursor={tooltipCursor}
+          labelFormatter={(v) => formatDateValue(v) ?? String(v)}
+        />
+        <Bar dataKey={pick.yKey} fill={accent} radius={[4, 4, 0, 0]} />
+      </BarChart>
+    ) : (
+      <LineChart data={data} margin={{ top: 10, right: 20, bottom: 10, left: 10 }}>
+        <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" vertical={false} />
+        <XAxis
+          dataKey={pick.xKey}
+          stroke={rule}
+          tick={axisTick}
+          tickLine={false}
+          tickFormatter={(v) => formatDateValue(v) ?? String(v)}
+        />
+        <YAxis stroke={rule} tick={axisTick} tickLine={false} />
+        <Tooltip
+          contentStyle={tooltipStyle}
+          labelStyle={tooltipLabel}
+          itemStyle={tooltipItem}
+          cursor={{ stroke: accent, strokeWidth: 1 }}
+          labelFormatter={(v) => formatDateValue(v) ?? String(v)}
+        />
+        <Line
+          type="monotone"
+          dataKey={pick.yKey}
+          stroke={accent}
+          strokeWidth={2}
+          dot={false}
+          activeDot={{ r: 4, fill: accent }}
+        />
+      </LineChart>
+    );
+
   return (
-    <ResponsiveContainer width="100%" height={300}>
-      {pick.kind === "bar" ? (
-        <BarChart data={data} margin={{ top: 10, right: 20, bottom: 10, left: 10 }}>
-          <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" vertical={false} />
-          <XAxis
-            dataKey={pick.xKey}
-            stroke={rule}
-            tick={axisTick}
-            tickLine={false}
-            tickFormatter={(v) => formatDateValue(v) ?? String(v)}
-          />
-          <YAxis stroke={rule} tick={axisTick} tickLine={false} />
-          <Tooltip
-            contentStyle={tooltipStyle}
-            labelStyle={tooltipLabel}
-            itemStyle={tooltipItem}
-            cursor={tooltipCursor}
-            labelFormatter={(v) => formatDateValue(v) ?? String(v)}
-          />
-          <Bar dataKey={pick.yKey} fill={accent} radius={[4, 4, 0, 0]} />
-        </BarChart>
-      ) : (
-        <LineChart data={data} margin={{ top: 10, right: 20, bottom: 10, left: 10 }}>
-          <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" vertical={false} />
-          <XAxis
-            dataKey={pick.xKey}
-            stroke={rule}
-            tick={axisTick}
-            tickLine={false}
-            tickFormatter={(v) => formatDateValue(v) ?? String(v)}
-          />
-          <YAxis stroke={rule} tick={axisTick} tickLine={false} />
-          <Tooltip
-            contentStyle={tooltipStyle}
-            labelStyle={tooltipLabel}
-            itemStyle={tooltipItem}
-            cursor={{ stroke: accent, strokeWidth: 1 }}
-            labelFormatter={(v) => formatDateValue(v) ?? String(v)}
-          />
-          <Line
-            type="monotone"
-            dataKey={pick.yKey}
-            stroke={accent}
-            strokeWidth={2}
-            dot={false}
-            activeDot={{ r: 4, fill: accent }}
-          />
-        </LineChart>
-      )}
-    </ResponsiveContainer>
+    <div className="an-chart-fill" style={{ width: "100%", height: "min(40vh, 360px)", minHeight: 220 }}>
+      <ChartFill>{chart}</ChartFill>
+    </div>
   );
 }

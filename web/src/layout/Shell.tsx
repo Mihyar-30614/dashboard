@@ -18,7 +18,8 @@ function useSectionLabel() {
   const apps = useApps();
   return useMemo(() => {
     const p = loc.pathname;
-    if (p === "/" || p === "") return "Overview";
+    // Overview already titles itself in PageHeader — skip shell echo
+    if (p === "/" || p === "") return "";
     if (p.startsWith("/analytics")) return "Analytics";
     if (p.startsWith("/settings")) return "Settings";
     if (p.startsWith("/app/")) {
@@ -40,7 +41,7 @@ export default function Shell() {
     now.toISOString().slice(11, 19) + " UTC · " + now.toISOString().slice(0, 10);
 
   return (
-    <div style={{ display: "flex", height: "100%" }}>
+    <div className="shell" style={{ display: "flex", height: "100%" }}>
       <Sidebar />
       <div
         style={{
@@ -50,17 +51,7 @@ export default function Shell() {
           minWidth: 0,
         }}
       >
-        <header
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "14px 28px",
-            borderBottom: "1px solid var(--border)",
-            background: "transparent",
-            backdropFilter: "blur(8px)",
-          }}
-        >
+        <header className="shell-header">
           <div
             style={{
               display: "flex",
@@ -73,11 +64,13 @@ export default function Shell() {
               color: "var(--muted)",
             }}
           >
-            <span>
-              <span className="led led--ok" style={{ marginRight: 8 }} />
-              live
-            </span>
-            <span style={{ color: "var(--ink-soft)" }}>{stamp}</span>
+            <time
+              dateTime={now.toISOString()}
+              style={{ color: "var(--ink-soft)" }}
+              title="UTC clock"
+            >
+              {stamp}
+            </time>
             {section && (
               <span
                 style={{
@@ -87,22 +80,13 @@ export default function Shell() {
                   paddingLeft: 18,
                   borderLeft: "1px solid var(--border)",
                   color: "var(--muted)",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
                 }}
               >
-                <span style={{ color: "var(--muted)" }}>section</span>
-                <span
-                  style={{
-                    fontFamily: "var(--font-display)",
-                    fontStyle: "italic",
-                    fontWeight: 500,
-                    fontSize: 14,
-                    letterSpacing: "-0.01em",
-                    textTransform: "none",
-                    color: "var(--text)",
-                  }}
-                >
-                  {section}
-                </span>
+                {section}
               </span>
             )}
           </div>
@@ -117,13 +101,7 @@ export default function Shell() {
             {me.data?.email}
           </span>
         </header>
-        <main
-          style={{
-            flex: 1,
-            padding: "28px 32px 64px",
-            overflow: "auto",
-          }}
-        >
+        <main className="shell-main">
           <Outlet />
         </main>
       </div>

@@ -51,8 +51,7 @@ export default function EmptyLayout({
           lineHeight: 1.5,
         }}
       >
-        Start by adding a KPI, chart, or health widget. You can drag, resize,
-        and remove them any time.
+        Start with the health / PM2 / uptime pack. Press E to edit, A to add.
       </p>
       <button
         type="button"
@@ -60,9 +59,9 @@ export default function EmptyLayout({
         style={{
           marginTop: 6,
           padding: "10px 18px",
-          background: "var(--accent)",
-          color: "var(--accent-ink, #fff)",
-          border: "none",
+          background: "var(--ink)",
+          color: "var(--bg)",
+          border: "1px solid var(--ink)",
           borderRadius: "var(--radius)",
           fontFamily: "var(--font-mono)",
           fontSize: 11,

@@ -6,12 +6,12 @@ import {
   CartesianGrid,
   Line,
   LineChart,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 import WidgetFrame from "../grid/WidgetFrame";
+import ChartFill from "../grid/ChartFill";
 import Skeleton from "../grid/Skeleton";
 import { useApps, useMetric } from "../api/hooks";
 
@@ -40,40 +40,36 @@ export function Timeseries({
       <Tooltip />
     </>
   );
+  let chart;
   if (chartType === "bar") {
-    return (
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data}>
-          {common}
-          <Bar dataKey="value" fill={color} />
-        </BarChart>
-      </ResponsiveContainer>
+    chart = (
+      <BarChart data={data}>
+        {common}
+        <Bar dataKey="value" fill={color} />
+      </BarChart>
     );
-  }
-  if (chartType === "area") {
-    return (
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data}>
-          {common}
-          <Area
-            type="monotone"
-            dataKey="value"
-            stroke={color}
-            fill={color}
-            fillOpacity={0.18}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+  } else if (chartType === "area") {
+    chart = (
+      <AreaChart data={data}>
+        {common}
+        <Area
+          type="monotone"
+          dataKey="value"
+          stroke={color}
+          fill={color}
+          fillOpacity={0.18}
+        />
+      </AreaChart>
     );
-  }
-  return (
-    <ResponsiveContainer width="100%" height="100%">
+  } else {
+    chart = (
       <LineChart data={data}>
         {common}
         <Line type="monotone" dataKey="value" stroke={color} dot={false} />
       </LineChart>
-    </ResponsiveContainer>
-  );
+    );
+  }
+  return <ChartFill>{chart}</ChartFill>;
 }
 
 function MetricTimeseries({

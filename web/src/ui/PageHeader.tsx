@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 
 export type PageHeaderProps = {
-  eyebrow: string;
+  /** Optional mono eyebrow; omit when the title alone carries the section. */
+  eyebrow?: string;
   title: string;
   meta?: ReactNode;
   /** Contextual counts — rendered as inline metadata, not KPI-style metrics. */
@@ -35,8 +36,8 @@ export default function PageHeader({ eyebrow, title, meta, stats, actions }: Pag
       className="page-header"
     >
       <div className="page-header__main">
-        <span className="eyebrow">{eyebrow}</span>
-        <h2 style={{ marginTop: 6, marginBottom: 0 }}>{title}</h2>
+        {eyebrow ? <span className="eyebrow">{eyebrow}</span> : null}
+        <h2 style={{ marginTop: eyebrow ? 6 : 0, marginBottom: 0 }}>{title}</h2>
         {stats && stats.length > 0 && <PageHeaderSummary stats={stats} />}
         {meta && <div className="page-header__meta">{meta}</div>}
       </div>

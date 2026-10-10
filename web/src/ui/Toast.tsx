@@ -120,7 +120,6 @@ function ToastItem({ t, onClose }: { t: Toast; onClose: () => void }) {
         background: c.bg,
         color: c.fg,
         border: "1px solid var(--border)",
-        borderLeft: `3px solid ${c.led}`,
         borderRadius: "var(--radius)",
         boxShadow: "var(--shadow-md)",
         display: "flex",
@@ -131,6 +130,21 @@ function ToastItem({ t, onClose }: { t: Toast; onClose: () => void }) {
         animation: "fadeUp 200ms ease-out both",
       }}
     >
+      <span
+        className="led"
+        aria-hidden
+        style={{
+          width: 8,
+          height: 8,
+          marginTop: 5,
+          flexShrink: 0,
+          background: c.led,
+          boxShadow:
+            t.kind === "error"
+              ? `0 0 8px color-mix(in srgb, ${c.led} 50%, transparent)`
+              : "none",
+        }}
+      />
       <span style={{ flex: 1, whiteSpace: "pre-wrap" }}>{t.message}</span>
       <button
         type="button"

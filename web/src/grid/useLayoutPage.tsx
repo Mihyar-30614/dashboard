@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import GridCanvas, { type GridWidget } from "./GridCanvas";
 import WidgetFrame from "./WidgetFrame";
 import { useLayout, useSaveLayout, useApps } from "../api/hooks";
@@ -10,9 +10,11 @@ import EmptyLayout from "./EmptyLayout";
 import { setPageDirty } from "./savingRegistry";
 import { ParamsEditingContext } from "./paramsEditing";
 import { ExpandContext } from "./expandContext";
+import { LayoutEditContext } from "./layoutEditContext";
 import DrilldownModal from "./DrilldownModal";
 import { useToast } from "../ui/Toast";
 import WidgetErrorBoundary from "./WidgetErrorBoundary";
+import ConfirmDialog from "../ui/ConfirmDialog";
 
 export type LayoutPageScope = "overview" | "app";
 
@@ -57,6 +59,8 @@ export function useLayoutPage({
   const [local, setLocal] = useState<GridWidget[]>([]);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [expanded, setExpanded] = useState<GridWidget | null>(null);
+  const [layoutEditing, setLayoutEditing] = useState(false);
+  const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(null);
   const [pageRange, setPageRange] = useState<string>(() => {
     if (typeof window === "undefined") return "30d";
     const stored = window.localStorage.getItem(`range:${screen}`);
@@ -68,6 +72,8 @@ export function useLayoutPage({
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const timer = useRef<number | null>(null);
+  const addWidgetBtnRef = useRef<HTMLButtonElement | null>(null);
+  const editBtnRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (layoutQ.data) {
@@ -82,6 +88,52 @@ export function useLayoutPage({
     setPageDirty(dirtyKey, saveState === "dirty" || saveState === "saving");
     return () => setPageDirty(dirtyKey, false);
   }, [saveState, dirtyKey]);
+
+  // Accelerators: E edit · A add · 1/2/3 ranges (skip when typing in fields)
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (
+        t &&
+        (t.tagName === "INPUT" ||
+          t.tagName === "TEXTAREA" ||
+          t.tagName === "SELECT" ||
+          t.isContentEditable)
+      ) {
+        return;
+      }
+      if (paletteOpen || pendingRemoveId || expanded) return;
+      const key = e.key.toLowerCase();
+      if (key === "e") {
+        e.preventDefault();
+        setLayoutEditing((v) => !v);
+        return;
+      }
+      if (key === "a") {
+        e.preventDefault();
+        setLayoutEditing(true);
+        setPaletteOpen(true);
+        return;
+      }
+      if (key === "1") {
+        e.preventDefault();
+        setPageRange("7d");
+        return;
+      }
+      if (key === "2") {
+        e.preventDefault();
+        setPageRange("30d");
+        return;
+      }
+      if (key === "3") {
+        e.preventDefault();
+        setPageRange("90d");
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [paletteOpen, pendingRemoveId, expanded]);
 
   function scheduleSave(next: GridWidget[]) {
     setSaveState("dirty");
@@ -106,6 +158,7 @@ export function useLayoutPage({
   }
 
   function onChange(next: GridWidget[]) {
+    if (!layoutEditing) return;
     setLocal(next);
     scheduleSave(next);
   }
@@ -114,6 +167,10 @@ export function useLayoutPage({
     const next = local.filter((w) => w.id !== id);
     setLocal(next);
     scheduleSave(next);
+  }
+
+  function requestRemove(id: string) {
+    setPendingRemoveId(id);
   }
 
   function updateParams(id: string, params: Record<string, unknown>) {
@@ -125,6 +182,7 @@ export function useLayoutPage({
   function add(kind: string) {
     const def = WIDGETS[kind];
     if (!def) return;
+    if (!layoutEditing) setLayoutEditing(true);
     const app =
       defaultApp ?? apps.data?.[0]?.slug ?? appSlug ?? undefined;
     const nextY = local.reduce((m, w) => Math.max(m, w.y + w.h), 0);
@@ -146,6 +204,7 @@ export function useLayoutPage({
   }
 
   function addSql(widget: { id: number; viz?: string }) {
+    if (!layoutEditing) setLayoutEditing(true);
     const size = sqlDefaultSize(widget.viz);
     const nextY = local.reduce((m, w) => Math.max(m, w.y + w.h), 0);
     const next = [
@@ -201,7 +260,7 @@ export function useLayoutPage({
     const def = WIDGETS[w.kind];
     if (!def) {
       return (
-        <WidgetFrame title={w.kind} onRemove={() => remove(w.id)}>
+        <WidgetFrame title={w.kind} onRemove={() => requestRemove(w.id)}>
           Unknown widget
         </WidgetFrame>
       );
@@ -211,7 +270,7 @@ export function useLayoutPage({
       <WidgetErrorBoundary
         key={w.id}
         kind={w.kind}
-        onRemove={() => remove(w.id)}
+        onRemove={() => requestRemove(w.id)}
       >
         <ParamsEditingContext.Provider
           value={{
@@ -224,7 +283,7 @@ export function useLayoutPage({
             <C
               app={w.app}
               params={effectiveParams(w.params, pageRange)}
-              onRemove={() => remove(w.id)}
+              onRemove={() => requestRemove(w.id)}
             />
           </ExpandContext.Provider>
         </ParamsEditingContext.Provider>
@@ -232,12 +291,71 @@ export function useLayoutPage({
     );
   }
 
+  const pendingWidget = pendingRemoveId
+    ? local.find((w) => w.id === pendingRemoveId)
+    : null;
+
   const grid = (
-    <>
-      {layoutQ.data && local.length === 0 ? (
-        <EmptyLayout scope={paletteScope} onAdd={() => setPaletteOpen(true)} />
+    <LayoutEditContext.Provider value={{ editing: layoutEditing }}>
+      {layoutQ.isLoading ? (
+        <div
+          className="panel"
+          style={{
+            padding: 28,
+            fontFamily: "var(--font-mono)",
+            fontSize: 12,
+            color: "var(--muted)",
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+          }}
+        >
+          Loading layout…
+        </div>
+      ) : layoutQ.isError ? (
+        <div
+          className="panel"
+          style={{
+            padding: 28,
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+            alignItems: "flex-start",
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              color: "var(--bad)",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+            }}
+          >
+            Could not load layout
+          </div>
+          <p style={{ margin: 0, fontSize: 13, color: "var(--muted)", maxWidth: 420 }}>
+            {(layoutQ.error as Error)?.message ||
+              "Check the API connection, then try again."}
+          </p>
+          <button type="button" onClick={() => layoutQ.refetch()}>
+            Retry
+          </button>
+        </div>
+      ) : layoutQ.data && local.length === 0 ? (
+        <EmptyLayout
+          scope={paletteScope}
+          onAdd={() => {
+            setLayoutEditing(true);
+            setPaletteOpen(true);
+          }}
+        />
       ) : (
-        <GridCanvas widgets={local} onChange={onChange} renderWidget={renderWidget} />
+        <GridCanvas
+          widgets={local}
+          onChange={onChange}
+          renderWidget={renderWidget}
+          editable={layoutEditing}
+        />
       )}
       {expanded && (
         <DrilldownModal
@@ -246,7 +364,23 @@ export function useLayoutPage({
           onClose={() => setExpanded(null)}
         />
       )}
-    </>
+      <ConfirmDialog
+        open={pendingRemoveId != null}
+        title="Remove widget"
+        message={
+          pendingWidget
+            ? `Remove this ${pendingWidget.kind.replace(/_/g, " ")} widget from the board? The layout saves automatically after removal.`
+            : "Remove this widget from the board? The layout saves automatically after removal."
+        }
+        confirmLabel="Remove widget"
+        danger
+        onConfirm={() => {
+          if (pendingRemoveId) remove(pendingRemoveId);
+          setPendingRemoveId(null);
+        }}
+        onCancel={() => setPendingRemoveId(null)}
+      />
+    </LayoutEditContext.Provider>
   );
 
   const palette = (
@@ -257,8 +391,15 @@ export function useLayoutPage({
       dynamic={dynamicPalette}
       onPick={add}
       onClose={() => setPaletteOpen(false)}
+      returnFocusRef={addWidgetBtnRef as RefObject<HTMLElement | null>}
     />
   );
+
+  const rangeHints: Record<(typeof PAGE_RANGES)[number], string> = {
+    "7d": "1",
+    "30d": "2",
+    "90d": "3",
+  };
 
   const toolbar = (
     <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
@@ -274,6 +415,7 @@ export function useLayoutPage({
             type="button"
             onClick={() => setPageRange(r)}
             aria-pressed={pageRange === r}
+            title={`Range ${r} (${rangeHints[r]})`}
             style={{
               padding: "4px 8px",
               fontFamily: "var(--font-mono)",
@@ -287,9 +429,29 @@ export function useLayoutPage({
           </button>
         ))}
       </div>
-      <button type="button" onClick={() => setPaletteOpen(true)}>
-        + Add widget
+      <button
+        ref={editBtnRef}
+        type="button"
+        onClick={() => setLayoutEditing((e) => !e)}
+        aria-pressed={layoutEditing}
+        title={
+          layoutEditing
+            ? "Done editing — hide drag, resize, and remove (E)"
+            : "Edit layout — drag, resize, and remove widgets (E)"
+        }
+      >
+        {layoutEditing ? "Done editing" : "Edit layout"}
       </button>
+      {layoutEditing && (
+        <button
+          ref={addWidgetBtnRef}
+          type="button"
+          onClick={() => setPaletteOpen(true)}
+          title="Add widget (A)"
+        >
+          + Add widget
+        </button>
+      )}
     </div>
   );
 
@@ -301,6 +463,8 @@ export function useLayoutPage({
     setPaletteOpen,
     saveState,
     lastSavedAt,
+    layoutEditing,
+    setLayoutEditing,
     grid,
     palette,
     toolbar,

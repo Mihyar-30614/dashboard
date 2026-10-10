@@ -161,17 +161,20 @@ h3 {
 
 .page-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 20px;
+  gap: 16px 20px;
   margin-bottom: 20px;
 }
 .page-header__main {
   min-width: 0;
+  flex: 1 1 220px;
 }
 .page-header__meta {
   margin-top: 6px;
   display: flex;
+  flex-wrap: wrap;
   gap: 14px;
   font-family: var(--font-mono);
   font-size: 11px;
@@ -180,9 +183,11 @@ h3 {
 }
 .page-header__actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 14px;
-  flex-shrink: 0;
+  gap: 10px 14px;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 .page-header__summary {
   margin: 8px 0 0;
@@ -334,6 +339,47 @@ header button:hover {
   }
 }
 
+/* === Chart fill (GridStack + window resize) === */
+.grid-stack-item {
+  /* Absolute items can paint over neighbors when content min-width exceeds the cell. */
+  overflow: hidden;
+}
+.grid-stack-item-content {
+  overflow: hidden;
+}
+.grid-stack-item-content > * {
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+/* Widget titles must ellipsis inside narrow cells — letter-spaced eyebrows are wide. */
+.grid-stack-item-content .eyebrow,
+.grid-stack-item-content .widget-title {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Host is layout-constrained; stage is absolute so SVG cannot lock the box. */
+.chart-fill {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+.chart-fill__stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.widget-frame__body > .skeleton {
+  flex: 1 1 auto;
+  min-height: 60px;
+}
+
 /* === Mono numerics === */
 .metric {
   font-family: var(--font-mono);
@@ -381,9 +427,22 @@ header button:hover {
 .kpi-widget__body {
   flex: 1;
   min-height: 0;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  /* size → both axes; width shrinks on window resize (grid cols are %). */
+  container-type: size;
+  container-name: kpi;
+}
+/* Prefer cqw — cell height is fixed (GridStack cellHeight); width tracks the viewport. */
+.kpi-widget__body .metric--xl {
+  font-size: clamp(1.15rem, 9cqw + 6cqh, 2.75rem);
+}
+.kpi-widget__body .metric--lg {
+  font-size: clamp(0.95rem, 7cqw + 4cqh, 1.75rem);
 }
 .kpi-value {
   display: flex;
@@ -507,8 +566,10 @@ header button:hover {
   gap: 10px;
 }
 .kpi-sparkline__chart {
+  position: relative;
   flex: 1;
   min-height: 48px;
+  min-width: 0;
 }
 .kpi-target__state--unknown {
   color: var(--muted);
@@ -519,7 +580,18 @@ header button:hover {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  width: 100%;
   height: 100%;
+  min-width: 0;
+  min-height: 0;
+  container-type: size;
+  container-name: metric;
+}
+.metric-widget .metric--xl {
+  font-size: clamp(1.15rem, 9cqw + 6cqh, 2.75rem);
+}
+.metric-widget .metric--lg {
+  font-size: clamp(0.95rem, 7cqw + 4cqh, 1.75rem);
 }
 .metric-widget__caption {
   margin-top: 10px;
@@ -583,6 +655,16 @@ header button:hover {
   margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid var(--border);
+  min-width: 0;
+}
+@container metric (max-width: 200px) {
+  .pm2-stats {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .metric-widget__status-row {
+    gap: 8px;
+  }
 }
 .pm2-stat__label {
   font-size: 9px;
@@ -725,4 +807,31 @@ header button:hover {
   font-size: var(--text-xs);
   color: var(--muted);
   margin-bottom: var(--space-1);
+}
+
+/* === Shell responsive chrome === */
+.shell-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 28px;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  backdrop-filter: blur(8px);
+}
+.shell-main {
+  flex: 1;
+  padding: 28px 32px 64px;
+  overflow: auto;
+  min-width: 0;
+}
+@media (max-width: 768px) {
+  .shell-header {
+    padding: 12px 14px;
+  }
+  .shell-main {
+    padding: 16px 14px 48px;
+  }
 }

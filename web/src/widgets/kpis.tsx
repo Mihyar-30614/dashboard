@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { useQueries } from "@tanstack/react-query";
-import { Line, LineChart, ResponsiveContainer } from "recharts";
+import { Line, LineChart } from "recharts";
 import WidgetFrame from "../grid/WidgetFrame";
+import ChartFill from "../grid/ChartFill";
 import Skeleton from "../grid/Skeleton";
 import { useApps, useMetric } from "../api/hooks";
 import { api } from "../api/client";
@@ -261,7 +262,7 @@ export function KpiSparkline({ app, params = {}, onRemove }: WidgetProps) {
           {ts.isLoading && data.length === 0 ? (
             <Skeleton variant="chart" />
           ) : (
-            <ResponsiveContainer width="100%" height="100%">
+            <ChartFill>
               <LineChart data={data}>
                 <Line
                   type="monotone"
@@ -272,7 +273,7 @@ export function KpiSparkline({ app, params = {}, onRemove }: WidgetProps) {
                   isAnimationActive={false}
                 />
               </LineChart>
-            </ResponsiveContainer>
+            </ChartFill>
           )}
         </div>
       </div>

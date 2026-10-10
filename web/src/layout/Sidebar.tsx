@@ -38,7 +38,7 @@ const APP_ICONS: Record<string, LucideIcon> = {
 
 const STATIC_SECTIONS: { label: string; items: Item[] }[] = [
   {
-    label: "Surveys",
+    label: "Fleet",
     items: [
       {
         slug: "overview",
@@ -69,7 +69,14 @@ export default function Sidebar() {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem(STORAGE_KEY) === "1";
   });
+  /** Narrow viewports always use the icon rail so the grid keeps usable width. */
+  const [narrow, setNarrow] = useState<boolean>(() =>
+    typeof window !== "undefined"
+      ? window.matchMedia("(max-width: 900px)").matches
+      : false,
+  );
   const { data: appList } = useApps();
+  const railCollapsed = narrow || collapsed;
 
   const sections = useMemo(() => {
     const propertyItems: Item[] = (appList ?? []).map((a) => ({
@@ -87,6 +94,15 @@ export default function Sidebar() {
   }, [appList]);
 
   useEffect(() => {
+    const mq = window.matchMedia("(max-width: 900px)");
+    const onChange = () => setNarrow(mq.matches);
+    onChange();
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    // Persist only the user's explicit choice — not viewport-forced collapse.
     window.localStorage.setItem(STORAGE_KEY, collapsed ? "1" : "0");
   }, [collapsed]);
 
@@ -128,29 +144,28 @@ export default function Sidebar() {
   return (
     <aside
       style={{
-        width: collapsed ? 60 : 232,
+        width: railCollapsed ? 60 : 232,
         flexShrink: 0,
         borderRight: "1px solid var(--border)",
-        padding: collapsed ? "26px 8px" : "26px 18px",
+        padding: railCollapsed ? "26px 8px" : "26px 18px",
         display: "flex",
         flexDirection: "column",
         gap: 24,
         background: "transparent",
-        transition: "width var(--duration-normal) ease, padding var(--duration-normal) ease",
         overflow: "hidden",
       }}
     >
       <div
         style={{
           display: "flex",
-          flexDirection: collapsed ? "column" : "row",
+          flexDirection: railCollapsed ? "column" : "row",
           alignItems: "center",
-          justifyContent: collapsed ? "center" : "space-between",
-          paddingLeft: collapsed ? 0 : 6,
-          gap: collapsed ? 10 : 8,
+          justifyContent: railCollapsed ? "center" : "space-between",
+          paddingLeft: railCollapsed ? 0 : 6,
+          gap: railCollapsed ? 10 : 8,
         }}
       >
-        {collapsed ? (
+        {railCollapsed ? (
           <img
             src="/icon.svg"
             alt="Observatory"
@@ -187,31 +202,33 @@ export default function Sidebar() {
             </div>
           </div>
         )}
-        <button
-          type="button"
-          onClick={() => setCollapsed((v) => !v)}
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          style={{
-            width: 28,
-            height: 28,
-            padding: 0,
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "transparent",
-            border: "1px solid var(--border)",
-            borderRadius: "var(--radius)",
-            color: "var(--muted)",
-            cursor: "pointer",
-          }}
-        >
-          {collapsed ? (
-            <ChevronRight size={14} strokeWidth={1.8} />
-          ) : (
-            <ChevronLeft size={14} strokeWidth={1.8} />
-          )}
-        </button>
+        {!narrow && (
+          <button
+            type="button"
+            onClick={() => setCollapsed((v) => !v)}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            style={{
+              width: 28,
+              height: 28,
+              padding: 0,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "transparent",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius)",
+              color: "var(--muted)",
+              cursor: "pointer",
+            }}
+          >
+            {collapsed ? (
+              <ChevronRight size={14} strokeWidth={1.8} />
+            ) : (
+              <ChevronLeft size={14} strokeWidth={1.8} />
+            )}
+          </button>
+        )}
       </div>
 
       {sections.map((section) => (
@@ -219,7 +236,7 @@ export default function Sidebar() {
           key={section.label}
           style={{ display: "flex", flexDirection: "column", gap: 2 }}
         >
-          {!collapsed && (
+          {!railCollapsed && (
             <div
               style={{
                 fontFamily: "var(--font-mono)",
@@ -240,13 +257,13 @@ export default function Sidebar() {
                 key={it.slug}
                 to={it.path}
                 end={it.end}
-                title={collapsed ? it.label : undefined}
+                title={railCollapsed ? it.label : undefined}
                 style={({ isActive }) => ({
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: collapsed ? "center" : "flex-start",
+                  justifyContent: railCollapsed ? "center" : "flex-start",
                   gap: 10,
-                  padding: collapsed ? "9px 0" : "9px 12px",
+                  padding: railCollapsed ? "9px 0" : "9px 12px",
                   borderRadius: "var(--radius-lg)",
                   textDecoration: "none",
                   color: isActive ? "var(--text)" : "var(--ink-soft)",
@@ -273,7 +290,7 @@ export default function Sidebar() {
                     >
                       <Icon size={16} strokeWidth={1.7} />
                     </span>
-                    {!collapsed && <span>{it.label}</span>}
+                    {!railCollapsed && <span>{it.label}</span>}
                   </>
                 )}
               </NavLink>
@@ -285,16 +302,16 @@ export default function Sidebar() {
       <div
         style={{
           marginTop: "auto",
-          paddingLeft: collapsed ? 0 : 8,
-          textAlign: collapsed ? "center" : "left",
+          paddingLeft: railCollapsed ? 0 : 8,
+          textAlign: railCollapsed ? "center" : "left",
         }}
       >
         <UtilButton
           onClick={() => setTheme((t) => (t === "light" ? "dark" : "light"))}
-          collapsed={collapsed}
+          collapsed={railCollapsed}
           label={theme === "light" ? "Dark mode" : "Light mode"}
           title={
-            collapsed
+            railCollapsed
               ? theme === "light"
                 ? "Switch to dark"
                 : "Switch to light"
@@ -311,17 +328,17 @@ export default function Sidebar() {
         />
         <NavLink
           to="/settings"
-          title={collapsed ? "Settings" : undefined}
+          title={railCollapsed ? "Settings" : undefined}
           style={({ isActive }) => ({
             display: "flex",
             alignItems: "center",
-            justifyContent: collapsed ? "center" : "flex-start",
+            justifyContent: railCollapsed ? "center" : "flex-start",
             gap: 8,
             padding: "8px 0",
             color: isActive ? "var(--accent)" : "var(--muted)",
             fontFamily: "var(--font-mono)",
             fontSize: 10,
-            letterSpacing: collapsed ? "0" : "0.18em",
+            letterSpacing: railCollapsed ? "0" : "0.18em",
             textTransform: "uppercase",
             textDecoration: "none",
           })}
@@ -339,13 +356,13 @@ export default function Sidebar() {
           >
             <Settings size={16} strokeWidth={1.7} />
           </span>
-          {!collapsed && <span>Settings</span>}
+          {!railCollapsed && <span>Settings</span>}
         </NavLink>
         <UtilButton
           onClick={requestLogout}
-          collapsed={collapsed}
+          collapsed={railCollapsed}
           label="Sign out"
-          title={collapsed ? "Sign out" : undefined}
+          title={railCollapsed ? "Sign out" : undefined}
           ariaLabel="Sign out"
           icon={<LogOut size={16} strokeWidth={1.7} />}
         />

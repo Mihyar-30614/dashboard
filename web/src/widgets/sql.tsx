@@ -4,12 +4,12 @@ import {
   CartesianGrid,
   Line,
   LineChart,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 import WidgetFrame from "../grid/WidgetFrame";
+import ChartFill from "../grid/ChartFill";
 import Skeleton from "../grid/Skeleton";
 import { useSqlWidget, useSqlRun, type SqlRunResult } from "../api/sqlWidgets";
 import { formatCell } from "../lib/format";
@@ -82,7 +82,7 @@ export function SqlLine({
   const { xCol, yCols } = resolveAxes(result, options);
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ChartFill>
       <LineChart data={result.rows}>
         <CartesianGrid stroke="var(--grid-line)" />
         <XAxis dataKey={xCol} tick={{ fontSize: 10 }} />
@@ -98,7 +98,7 @@ export function SqlLine({
           />
         ))}
       </LineChart>
-    </ResponsiveContainer>
+    </ChartFill>
   );
 }
 
@@ -112,7 +112,7 @@ export function SqlBar({
   const { xCol, yCols } = resolveAxes(result, options);
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ChartFill>
       <BarChart data={result.rows}>
         <CartesianGrid stroke="var(--grid-line)" />
         <XAxis dataKey={xCol} tick={{ fontSize: 10 }} />
@@ -122,7 +122,7 @@ export function SqlBar({
           <Bar key={y} dataKey={y} fill={COLORS[i % COLORS.length]} />
         ))}
       </BarChart>
-    </ResponsiveContainer>
+    </ChartFill>
   );
 }
 

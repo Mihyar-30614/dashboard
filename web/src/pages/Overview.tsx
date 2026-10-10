@@ -21,7 +21,6 @@ export default function Overview() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
       <PageHeader
-        eyebrow="overview · all properties"
         title="Overview"
         stats={[
           { k: "apps", v: total || "—" },

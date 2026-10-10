@@ -2,6 +2,7 @@ import React, { useContext, useState } from "react";
 import { Maximize2, Settings2, X } from "lucide-react";
 import { ParamsEditingContext, ParamsPopover, editableFields } from "./paramsEditing";
 import { ExpandContext } from "./expandContext";
+import { LayoutEditContext } from "./layoutEditContext";
 
 type Props = {
   title: string;
@@ -25,8 +26,10 @@ export default function WidgetFrame({
 }: Props) {
   const editing = useContext(ParamsEditingContext);
   const expand = useContext(ExpandContext);
+  const { editing: layoutEditing } = useContext(LayoutEditContext);
   const fields = editing ? editableFields(editing.schema) : [];
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const showEditChrome = layoutEditing;
   return (
     <div
       className="panel fade-up"
@@ -39,18 +42,18 @@ export default function WidgetFrame({
       }}
     >
       <div
-        className="widget-drag-handle"
+        className={showEditChrome ? "widget-drag-handle" : undefined}
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "baseline",
           marginBottom: 14,
           gap: 8,
-          cursor: "grab",
+          cursor: showEditChrome ? "grab" : "default",
           userSelect: "none",
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
           {titleVariant === "label" ? (
             <h3 className="widget-title">{title}</h3>
           ) : (
@@ -65,6 +68,9 @@ export default function WidgetFrame({
                       fontFamily: "var(--font-mono)",
                       fontSize: 11,
                       color: "var(--muted)",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
                     }
               }
             >
@@ -111,7 +117,7 @@ export default function WidgetFrame({
               <Maximize2 size={12} strokeWidth={1.8} />
             </button>
           )}
-          {editing && fields.length > 0 && (
+          {showEditChrome && editing && fields.length > 0 && (
             <button
               type="button"
               onMouseDown={(e) => e.stopPropagation()}
@@ -130,7 +136,7 @@ export default function WidgetFrame({
               <Settings2 size={12} strokeWidth={1.8} />
             </button>
           )}
-          {onRemove && (
+          {showEditChrome && onRemove && (
             <button
               type="button"
               onMouseDown={(e) => e.stopPropagation()}
@@ -159,7 +165,18 @@ export default function WidgetFrame({
           onClose={() => setSettingsOpen(false)}
         />
       )}
-      <div style={{ flex: 1, minHeight: 0 }}>{children}</div>
+      <div
+        className="widget-frame__body"
+        style={{
+          flex: 1,
+          minHeight: 0,
+          minWidth: 0,
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {children}
+      </div>
     </div>
   );
 }

@@ -29,4 +29,10 @@ describe("PageHeader", () => {
     render(<PageHeader eyebrow="settings · workspace" title="Access & invites" />);
     expect(screen.queryByRole("button")).toBeNull();
   });
+
+  it("allows omitting the eyebrow", () => {
+    render(<PageHeader title="Overview" />);
+    expect(screen.queryByText(/fleet|overview ·/i)).toBeNull();
+    expect(screen.getByRole("heading", { level: 2, name: "Overview" })).toBeInTheDocument();
+  });
 });
