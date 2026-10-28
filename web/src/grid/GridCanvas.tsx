@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
-import { GridStack, type GridStackNode, type Responsive } from "gridstack";
+import { GridStack, type GridStackNode } from "gridstack";
 import "gridstack/dist/gridstack.min.css";
 import "gridstack/dist/gridstack-extra.css";
+import { MAX_COLUMNS, columnsForWidth, layoutForColumns } from "./layoutMath";
 
 export type GridWidget = {
   id: string;
@@ -12,21 +13,6 @@ export type GridWidget = {
   w: number;
   h: number;
   params: Record<string, unknown>;
-};
-
-/**
- * Scale/stack when the canvas is narrow, then restore the cached 12-col layout
- * on the way back up. `list`/`compact` must not be used here — they only restore
- * `w` and re-pack, so the original x/y are lost after a resize cycle.
- */
-const RESPONSIVE_COLUMNS: Responsive = {
-  columnMax: 12,
-  layout: "moveScale",
-  breakpoints: [
-    // 12→2: w=4 becomes w=1 → two-across; 12→1: full stack. Cache restores both.
-    { w: 900, c: 2 },
-    { w: 560, c: 1 },
-  ],
 };
 
 type Props = {
@@ -46,19 +32,69 @@ export default function GridCanvas({
   const rootRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<GridStack | null>(null);
   const widgetsRef = useRef<GridWidget[]>(widgets);
+  const onChangeRef = useRef(onChange);
+  const editableRef = useRef(editable);
   const internalChangeRef = useRef(false);
+  /** True mid drag/resize, when the engine is ahead of `widgets`. */
+  const interactingRef = useRef(false);
 
-  // keep ref fresh
-  useEffect(() => {
-    widgetsRef.current = widgets;
-  }, [widgets]);
+  // keep refs fresh — the GridStack change handler is bound once at init
+  widgetsRef.current = widgets;
+  onChangeRef.current = onChange;
+  editableRef.current = editable;
+
+  /**
+   * Lay the grid out for the current canvas width. GridStack's own responsive
+   * mode (`columnOpts` + `moveScale`) rounds x/w per item, which collides and
+   * reorders widgets, and its column cache goes stale once the layout is
+   * edited. Instead every column count is derived from the saved 12-column
+   * layout (see layoutMath) and pushed in with `load()`. Editing always pins
+   * 12 columns so drag/save coords stay canonical.
+   */
+  function sync() {
+    const grid = gridRef.current;
+    const root = rootRef.current;
+    if (!grid || !root || interactingRef.current) return;
+    const column = editableRef.current
+      ? MAX_COLUMNS
+      : columnsForWidth(root.clientWidth || window.innerWidth);
+    const target = layoutForColumns(
+      widgetsRef.current.map(({ id, x, y, w, h }) => ({ id, x, y, w, h })),
+      column,
+    );
+    const current = new Map(
+      grid.engine.nodes.map((n) => [n.id as string, n]),
+    );
+    const settled =
+      grid.getColumn() === column &&
+      target.every((t) => {
+        const n = current.get(t.id);
+        return !n || (n.x === t.x && n.y === t.y && n.w === t.w && n.h === t.h);
+      });
+    if (settled) return;
+    internalChangeRef.current = true;
+    grid.batchUpdate();
+    if (grid.getColumn() !== column) {
+      // Drop GridStack's cached per-column layouts; ours are derived instead.
+      grid.engine.cacheLayout([], MAX_COLUMNS, true);
+      grid.column(column, "none");
+    }
+    grid.load(
+      target.filter((t) => current.has(t.id)),
+      false,
+    );
+    grid.batchUpdate(false);
+    queueMicrotask(() => {
+      internalChangeRef.current = false;
+    });
+  }
 
   // init once
   useEffect(() => {
     if (!rootRef.current || gridRef.current) return;
-    gridRef.current = GridStack.init(
+    const grid = GridStack.init(
       {
-        column: 12,
+        column: MAX_COLUMNS,
         cellHeight: 70,
         margin: 10,
         float: true,
@@ -66,15 +102,20 @@ export default function GridCanvas({
         handle: ".widget-drag-handle",
         resizable: { handles: "se,e,s" },
         staticGrid: !editable,
-        // Edit mode locks to 12-col so drag/save coords stay canonical.
-        columnOpts: editable ? undefined : RESPONSIVE_COLUMNS,
       },
       rootRef.current,
     );
-    gridRef.current.on("change", () => {
-      if (internalChangeRef.current) return;
-      const grid = gridRef.current;
-      if (!grid || grid.isIgnoreChangeCB()) return;
+    gridRef.current = grid;
+    grid.on("dragstart resizestart", () => {
+      interactingRef.current = true;
+    });
+    grid.on("dragstop resizestop", () => {
+      interactingRef.current = false;
+    });
+    grid.on("change", () => {
+      if (internalChangeRef.current || grid.isIgnoreChangeCB()) return;
+      // Only the canonical 12-column layout is ever saved.
+      if (!editableRef.current || grid.getColumn() !== MAX_COLUMNS) return;
       const nodes = grid.engine.nodes as GridStackNode[];
       const next: GridWidget[] = nodes.map((n) => {
         const orig =
@@ -89,8 +130,13 @@ export default function GridCanvas({
           h: n.h!,
         };
       });
-      onChange(next);
+      widgetsRef.current = next;
+      onChangeRef.current(next);
     });
+    // First paint at the right column count, without animating into it.
+    grid.setAnimation(false);
+    sync();
+    grid.setAnimation(true, true);
     return () => {
       gridRef.current?.destroy(false);
       gridRef.current = null;
@@ -99,34 +145,30 @@ export default function GridCanvas({
   }, []);
 
   useEffect(() => {
-    const grid = gridRef.current;
-    if (!grid) return;
-    grid.setStatic(!editable);
-    // Editing: pin 12-col canonical layout. Viewing: reflow by canvas width.
-    if (editable) {
-      grid.opts.columnOpts = undefined;
-      if (grid.getColumn() !== 12) grid.column(12);
-    } else {
-      grid.opts.columnOpts = RESPONSIVE_COLUMNS;
-      grid.onResize();
-    }
+    gridRef.current?.setStatic(!editable);
+    sync();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editable]);
 
-  // Keep column geometry in sync when the shell width changes (sidebar / window).
+  // Re-derive the layout when the shell width changes (sidebar / window).
+  // Height changes are ignored: the grid grows while items are dragged.
   useEffect(() => {
-    const grid = gridRef.current;
     const root = rootRef.current;
-    if (!grid || !root) return;
-    const onWin = () => {
-      grid.onResize(root.clientWidth);
+    if (!root) return;
+    let lastWidth = root.clientWidth;
+    const onResize = () => {
+      if (root.clientWidth === lastWidth) return;
+      lastWidth = root.clientWidth;
+      sync();
     };
-    window.addEventListener("resize", onWin);
-    const ro = new ResizeObserver(() => onWin());
+    const ro = new ResizeObserver(onResize);
     ro.observe(root);
+    window.addEventListener("resize", onResize);
     return () => {
-      window.removeEventListener("resize", onWin);
       ro.disconnect();
+      window.removeEventListener("resize", onResize);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // sync widget set into gridstack when ids change
@@ -160,6 +202,13 @@ export default function GridCanvas({
       internalChangeRef.current = false;
     });
   }, [idsKey]);
+
+  // Positions set from outside (best fit, undo, add/remove) → push into the grid.
+  const posKey = widgets.map((w) => `${w.id}:${w.x},${w.y},${w.w},${w.h}`).join("|");
+  useEffect(() => {
+    sync();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [posKey, idsKey]);
 
   return (
     <div className="grid-stack" ref={rootRef}>

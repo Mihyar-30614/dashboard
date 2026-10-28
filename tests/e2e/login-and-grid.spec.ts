@@ -26,7 +26,8 @@ test("login then drag a widget and persist", async ({ page, request }) => {
   await page.getByRole("link", { name: "Sportly" }).click();
   await expect(page.getByRole("heading", { name: "Sportly" })).toBeVisible();
 
-  // Layouts save themselves shortly after a change; there is no edit mode.
+  // Layouts save themselves shortly after a change made in edit mode.
+  await page.getByRole("button", { name: "Edit layout" }).click();
   const item = page.locator(".grid-stack-item").first();
   await expect(item).toBeVisible();
   const id = (await item.getAttribute("gs-id")) as string;

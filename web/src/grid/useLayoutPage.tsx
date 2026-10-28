@@ -15,6 +15,7 @@ import DrilldownModal from "./DrilldownModal";
 import { useToast } from "../ui/Toast";
 import WidgetErrorBoundary from "./WidgetErrorBoundary";
 import ConfirmDialog from "../ui/ConfirmDialog";
+import { bestFitLayout } from "./layoutMath";
 
 export type LayoutPageScope = "overview" | "app";
 
@@ -61,6 +62,8 @@ export function useLayoutPage({
   const [expanded, setExpanded] = useState<GridWidget | null>(null);
   const [layoutEditing, setLayoutEditing] = useState(false);
   const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(null);
+  /** Layout from before the last best fit, while it can still be undone. */
+  const [fitUndo, setFitUndo] = useState<GridWidget[] | null>(null);
   const [pageRange, setPageRange] = useState<string>(() => {
     if (typeof window === "undefined") return "30d";
     const stored = window.localStorage.getItem(`range:${screen}`);
@@ -83,6 +86,10 @@ export function useLayoutPage({
         setLastSavedAt(new Date(layoutQ.data.updated_at));
     }
   }, [layoutQ.data]);
+
+  useEffect(() => {
+    if (!layoutEditing) setFitUndo(null);
+  }, [layoutEditing]);
 
   useEffect(() => {
     setPageDirty(dirtyKey, saveState === "dirty" || saveState === "saving");
@@ -159,11 +166,27 @@ export function useLayoutPage({
 
   function onChange(next: GridWidget[]) {
     if (!layoutEditing) return;
+    setFitUndo(null);
     setLocal(next);
     scheduleSave(next);
   }
 
+  function bestFit() {
+    const next = bestFitLayout(local);
+    setFitUndo(local);
+    setLocal(next);
+    scheduleSave(next);
+  }
+
+  function undoBestFit() {
+    if (!fitUndo) return;
+    setLocal(fitUndo);
+    scheduleSave(fitUndo);
+    setFitUndo(null);
+  }
+
   function remove(id: string) {
+    setFitUndo(null);
     const next = local.filter((w) => w.id !== id);
     setLocal(next);
     scheduleSave(next);
@@ -183,6 +206,7 @@ export function useLayoutPage({
     const def = WIDGETS[kind];
     if (!def) return;
     if (!layoutEditing) setLayoutEditing(true);
+    setFitUndo(null);
     const app =
       defaultApp ?? apps.data?.[0]?.slug ?? appSlug ?? undefined;
     const nextY = local.reduce((m, w) => Math.max(m, w.y + w.h), 0);
@@ -205,6 +229,7 @@ export function useLayoutPage({
 
   function addSql(widget: { id: number; viz?: string }) {
     if (!layoutEditing) setLayoutEditing(true);
+    setFitUndo(null);
     const size = sqlDefaultSize(widget.viz);
     const nextY = local.reduce((m, w) => Math.max(m, w.y + w.h), 0);
     const next = [
@@ -452,6 +477,24 @@ export function useLayoutPage({
           + Add widget
         </button>
       )}
+      {layoutEditing && local.length > 0 &&
+        (fitUndo ? (
+          <button
+            type="button"
+            onClick={undoBestFit}
+            title="Restore the layout from before best fit"
+          >
+            Undo best fit
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={bestFit}
+            title="Re-arrange widgets into full-width rows with no gaps"
+          >
+            Best fit
+          </button>
+        ))}
     </div>
   );
 
@@ -472,6 +515,7 @@ export function useLayoutPage({
     remove,
     add,
     addSql,
+    bestFit,
     renderWidget,
   };
 }
