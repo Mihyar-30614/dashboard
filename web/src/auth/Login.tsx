@@ -25,33 +25,11 @@ export default function Login() {
   }
 
   return (
-    <div
-      style={{
-        height: "100%",
-        display: "grid",
-        gridTemplateColumns: "1.1fr 1fr",
-      }}
-    >
-      <div
-        style={{
-          padding: "64px 64px",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          borderRight: "1px solid var(--border)",
-        }}
-      >
+    <div className="login">
+      <div className="login__intro">
         <div>
           <div className="eyebrow">v0.1 · observatory</div>
-          <h1
-            style={{
-              marginTop: 18,
-              fontSize: 64,
-              lineHeight: 0.95,
-              fontWeight: 400,
-              letterSpacing: "-0.025em",
-            }}
-          >
+          <h1 className="login__title">
             Watch the
             <br />
             <em
@@ -66,45 +44,20 @@ export default function Login() {
             </em>
             .
           </h1>
-          <p
-            style={{
-              maxWidth: 420,
-              marginTop: 22,
-              color: "var(--muted)",
-              fontSize: 15,
-              lineHeight: 1.55,
-            }}
-          >
+          <p className="login__lede">
             A small instrument for keeping three applications honest. Pulls
             health, traffic, KPIs, and PM2 state — read-only, behind a single
             login.
           </p>
         </div>
-        <div
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
-            color: "var(--muted)",
-            display: "flex",
-            gap: 28,
-          }}
-        >
+        <div className="login__apps">
           <span><span className="led led--ok" style={{ marginRight: 8 }} />sportly</span>
           <span><span className="led led--ok" style={{ marginRight: 8 }} />honeydoeh</span>
           <span><span className="led led--ok" style={{ marginRight: 8 }} />debtmanager</span>
         </div>
       </div>
 
-      <div
-        style={{
-          padding: "64px 64px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
+      <div className="login__form-pane">
         <form
           onSubmit={submit}
           style={{ width: "100%", maxWidth: 360 }}
