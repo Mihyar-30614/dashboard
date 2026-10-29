@@ -1,10 +1,10 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Box,
-  ChevronLeft,
-  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   Hammer,
   LayoutDashboard,
   LogOut,
@@ -14,13 +14,15 @@ import {
   Sun,
   Trophy,
   Wallet,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { api } from "../api/client";
-import { useApps } from "../api/hooks";
+import { useMe } from "../api/hooks";
 import { hasDirty } from "../grid/savingRegistry";
 import { useToast } from "../ui/Toast";
 import ConfirmDialog from "../ui/ConfirmDialog";
+import { useFleet, type FleetApp } from "./fleet";
 
 type Item = {
   slug: string;
@@ -36,65 +38,56 @@ const APP_ICONS: Record<string, LucideIcon> = {
   debtmanager: Wallet,
 };
 
-const STATIC_SECTIONS: { label: string; items: Item[] }[] = [
-  {
-    label: "Fleet",
-    items: [
-      {
-        slug: "overview",
-        label: "Overview",
-        Icon: LayoutDashboard,
-        path: "/",
-        end: true,
-      },
-    ],
-  },
-  {
-    label: "Analytics",
-    items: [
-      {
-        slug: "analytics",
-        label: "Ask DB",
-        Icon: Sparkles,
-        path: "/analytics",
-      },
-    ],
-  },
+const PRIMARY: Item[] = [
+  { slug: "overview", label: "Overview", Icon: LayoutDashboard, path: "/", end: true },
+  { slug: "analytics", label: "Ask DB", Icon: Sparkles, path: "/analytics" },
 ];
 
 const STORAGE_KEY = "sidebar:collapsed";
+const NARROW = "(max-width: 900px)";
 
-export default function Sidebar() {
+function initials(email: string | undefined): string {
+  if (!email) return "·";
+  const name = email.split("@")[0].replace(/[^a-z]/gi, "");
+  return (name.slice(0, 2) || "·").toUpperCase();
+}
+
+export default function Sidebar({
+  drawerOpen,
+  onCloseDrawer,
+}: {
+  /** Narrow viewports show the sidebar as a drawer the shell header opens. */
+  drawerOpen: boolean;
+  onCloseDrawer: () => void;
+}) {
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem(STORAGE_KEY) === "1";
   });
-  /** Narrow viewports always use the icon rail so the grid keeps usable width. */
   const [narrow, setNarrow] = useState<boolean>(() =>
-    typeof window !== "undefined"
-      ? window.matchMedia("(max-width: 900px)").matches
-      : false,
+    typeof window !== "undefined" ? window.matchMedia(NARROW).matches : false,
   );
-  const { data: appList } = useApps();
-  const railCollapsed = narrow || collapsed;
+  // The drawer always shows labels; only the desktop sidebar collapses.
+  const rail = collapsed && !narrow;
+  const fleet = useFleet();
+  const me = useMe();
 
-  const sections = useMemo(() => {
-    const propertyItems: Item[] = (appList ?? []).map((a) => ({
-      slug: a.slug,
-      label: a.label,
-      Icon: APP_ICONS[a.slug] ?? Box,
-      path: `/app/${a.slug}`,
-    }));
-    return [
-      ...STATIC_SECTIONS,
-      ...(propertyItems.length
-        ? [{ label: "Properties", items: propertyItems }]
-        : []),
-    ];
-  }, [appList]);
+  const appItems = useMemo(
+    () =>
+      fleet.apps.map((a) => ({
+        app: a,
+        item: {
+          slug: a.slug,
+          label: a.label,
+          Icon: APP_ICONS[a.slug] ?? Box,
+          path: `/app/${a.slug}`,
+        } satisfies Item,
+      })),
+    [fleet.apps],
+  );
 
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 900px)");
+    const mq = window.matchMedia(NARROW);
     const onChange = () => setNarrow(mq.matches);
     onChange();
     mq.addEventListener("change", onChange);
@@ -105,6 +98,13 @@ export default function Sidebar() {
     // Persist only the user's explicit choice — not viewport-forced collapse.
     window.localStorage.setItem(STORAGE_KEY, collapsed ? "1" : "0");
   }, [collapsed]);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onCloseDrawer();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [drawerOpen, onCloseDrawer]);
 
   const qc = useQueryClient();
   const nav = useNavigate();
@@ -141,300 +141,164 @@ export default function Sidebar() {
     nav("/login", { replace: true });
   }
 
-  return (
-    <aside
-      style={{
-        width: railCollapsed ? 60 : 232,
-        flexShrink: 0,
-        borderRight: "1px solid var(--border)",
-        padding: railCollapsed ? "26px 8px" : "26px 18px",
-        display: "flex",
-        flexDirection: "column",
-        gap: 24,
-        background: "transparent",
-        overflow: "hidden",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          flexDirection: railCollapsed ? "column" : "row",
-          alignItems: "center",
-          justifyContent: railCollapsed ? "center" : "space-between",
-          paddingLeft: railCollapsed ? 0 : 6,
-          gap: railCollapsed ? 10 : 8,
-        }}
-      >
-        {railCollapsed ? (
-          <img
-            src="/icon.svg"
-            alt="Observatory"
-            width={32}
-            height={32}
-            style={{ display: "block", borderRadius: "var(--radius)" }}
-          />
-        ) : (
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <img
-              src="/icon.svg"
-              alt=""
-              aria-hidden
-              width={28}
-              height={28}
-              style={{ display: "block", borderRadius: "var(--radius)", flexShrink: 0 }}
-            />
-            <div>
-              <div
-                style={{
-                  fontFamily: "var(--font-display)",
-                  fontSize: 22,
-                  lineHeight: 1,
-                  letterSpacing: "-0.02em",
-                  fontStyle: "italic",
-                  fontWeight: 500,
-                }}
-              >
-                Observatory
-              </div>
-              <div className="eyebrow" style={{ marginTop: 6, paddingLeft: 0 }}>
-                v0.1 · ops
-              </div>
-            </div>
-          </div>
-        )}
-        {!narrow && (
-          <button
-            type="button"
-            onClick={() => setCollapsed((v) => !v)}
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            style={{
-              width: 28,
-              height: 28,
-              padding: 0,
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "transparent",
-              border: "1px solid var(--border)",
-              borderRadius: "var(--radius)",
-              color: "var(--muted)",
-              cursor: "pointer",
-            }}
-          >
-            {collapsed ? (
-              <ChevronRight size={14} strokeWidth={1.8} />
-            ) : (
-              <ChevronLeft size={14} strokeWidth={1.8} />
-            )}
-          </button>
-        )}
-      </div>
+  const email = me.data?.email;
+  const upCount = fleet.apps.filter((a) => a.state === "ok").length;
 
-      {sections.map((section) => (
-        <div
-          key={section.label}
-          style={{ display: "flex", flexDirection: "column", gap: 2 }}
-        >
-          {!railCollapsed && (
-            <div
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-                color: "var(--muted)",
-                padding: "0 8px 6px",
-              }}
-            >
-              {section.label}
+  return (
+    <>
+      <aside
+        className={
+          "sidebar" +
+          (rail ? " is-rail" : "") +
+          (narrow ? " is-drawer" : "") +
+          (narrow && drawerOpen ? " is-open" : "")
+        }
+        aria-label="Main navigation"
+      >
+        <div className="sidebar__brand">
+          <img src="/icon.svg" alt="" aria-hidden width={30} height={30} />
+          {!rail && (
+            <div className="sidebar__wordmark">
+              <span className="sidebar__name">Observatory</span>
+              <span className="sidebar__version">v0.1 · ops</span>
             </div>
           )}
-          {section.items.map((it) => {
-            const Icon = it.Icon;
-            return (
-              <NavLink
-                key={it.slug}
-                to={it.path}
-                end={it.end}
-                title={railCollapsed ? it.label : undefined}
-                style={({ isActive }) => ({
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: railCollapsed ? "center" : "flex-start",
-                  gap: 10,
-                  padding: railCollapsed ? "9px 0" : "9px 12px",
-                  borderRadius: "var(--radius-lg)",
-                  textDecoration: "none",
-                  color: isActive ? "var(--text)" : "var(--ink-soft)",
-                  background: isActive
-                    ? "color-mix(in srgb, var(--accent) 12%, transparent)"
-                    : "transparent",
-                  fontWeight: isActive ? 600 : 400,
-                  transition: "background var(--duration-fast), color var(--duration-fast)",
-                })}
-              >
-                {({ isActive }) => (
-                  <>
-                    <span
-                      aria-hidden
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: 22,
-                        height: 22,
-                        color: isActive ? "var(--accent)" : "var(--muted)",
-                        flexShrink: 0,
-                      }}
-                    >
-                      <Icon size={16} strokeWidth={1.7} />
-                    </span>
-                    {!railCollapsed && <span>{it.label}</span>}
-                  </>
-                )}
-              </NavLink>
-            );
-          })}
+          {narrow && (
+            <button
+              type="button"
+              className="sidebar__icon-btn sidebar__close"
+              onClick={onCloseDrawer}
+              aria-label="Close navigation"
+            >
+              <X size={16} strokeWidth={1.8} />
+            </button>
+          )}
         </div>
-      ))}
 
-      <div
-        style={{
-          marginTop: "auto",
-          paddingLeft: railCollapsed ? 0 : 8,
-          textAlign: railCollapsed ? "center" : "left",
-        }}
-      >
-        <UtilButton
-          onClick={() => setTheme((t) => (t === "light" ? "dark" : "light"))}
-          collapsed={railCollapsed}
-          label={theme === "light" ? "Dark mode" : "Light mode"}
-          title={
-            railCollapsed
-              ? theme === "light"
-                ? "Switch to dark"
-                : "Switch to light"
-              : undefined
-          }
-          ariaLabel="Toggle theme"
-          icon={
-            theme === "light" ? (
-              <Moon size={16} strokeWidth={1.7} />
-            ) : (
-              <Sun size={16} strokeWidth={1.7} />
-            )
-          }
+        <nav className="sidebar__nav">
+          <div className="sidebar__group">
+            {PRIMARY.map((it) => (
+              <NavItem key={it.slug} item={it} rail={rail} />
+            ))}
+          </div>
+
+          {appItems.length > 0 && (
+            <div className="sidebar__group">
+              {!rail && (
+                <div className="sidebar__label">
+                  <span>Apps</span>
+                  <span className={`sidebar__label-meta is-${fleet.worst}`}>
+                    {upCount}/{fleet.total} up
+                  </span>
+                </div>
+              )}
+              {appItems.map(({ app, item }) => (
+                <NavItem key={item.slug} item={item} rail={rail} app={app} />
+              ))}
+            </div>
+          )}
+        </nav>
+
+        <div className="sidebar__foot">
+          <div className="sidebar__account" title={email}>
+            <span className="sidebar__avatar" aria-hidden>
+              {initials(email)}
+            </span>
+            {!rail && (
+              <span className="sidebar__who">
+                <span className="sidebar__email">{email ?? "…"}</span>
+                <span className="sidebar__role">{me.data?.is_admin ? "Admin" : "Member"}</span>
+              </span>
+            )}
+          </div>
+          <div className="sidebar__tools">
+            <button
+              type="button"
+              className="sidebar__icon-btn"
+              onClick={() => setTheme((t) => (t === "light" ? "dark" : "light"))}
+              title={theme === "light" ? "Switch to dark" : "Switch to light"}
+              aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
+            >
+              {theme === "light" ? (
+                <Moon size={15} strokeWidth={1.8} />
+              ) : (
+                <Sun size={15} strokeWidth={1.8} />
+              )}
+            </button>
+            <NavLink
+              to="/settings"
+              className={({ isActive }) =>
+                "sidebar__icon-btn" + (isActive ? " is-active" : "")
+              }
+              title="Settings"
+              aria-label="Settings"
+            >
+              <Settings size={15} strokeWidth={1.8} />
+            </NavLink>
+            <button
+              type="button"
+              className="sidebar__icon-btn"
+              onClick={requestLogout}
+              title="Sign out"
+              aria-label="Sign out"
+            >
+              <LogOut size={15} strokeWidth={1.8} />
+            </button>
+            {!narrow && (
+              <button
+                type="button"
+                className="sidebar__icon-btn sidebar__collapse"
+                onClick={() => setCollapsed((v) => !v)}
+                title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              >
+                {collapsed ? (
+                  <ChevronsRight size={15} strokeWidth={1.8} />
+                ) : (
+                  <ChevronsLeft size={15} strokeWidth={1.8} />
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+
+        <ConfirmDialog
+          open={confirmLogout}
+          title="Sign out"
+          message="Layout has unsaved changes that will be lost. Sign out anyway?"
+          confirmLabel="Sign out"
+          onConfirm={logout}
+          onCancel={() => setConfirmLogout(false)}
         />
-        <NavLink
-          to="/settings"
-          title={railCollapsed ? "Settings" : undefined}
-          style={({ isActive }) => ({
-            display: "flex",
-            alignItems: "center",
-            justifyContent: railCollapsed ? "center" : "flex-start",
-            gap: 8,
-            padding: "8px 0",
-            color: isActive ? "var(--accent)" : "var(--muted)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: railCollapsed ? "0" : "0.18em",
-            textTransform: "uppercase",
-            textDecoration: "none",
-          })}
-        >
-          <span
-            aria-hidden
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 22,
-              height: 22,
-              flexShrink: 0,
-            }}
-          >
-            <Settings size={16} strokeWidth={1.7} />
-          </span>
-          {!railCollapsed && <span>Settings</span>}
-        </NavLink>
-        <UtilButton
-          onClick={requestLogout}
-          collapsed={railCollapsed}
-          label="Sign out"
-          title={railCollapsed ? "Sign out" : undefined}
-          ariaLabel="Sign out"
-          icon={<LogOut size={16} strokeWidth={1.7} />}
-        />
-      </div>
-      <ConfirmDialog
-        open={confirmLogout}
-        title="Sign out"
-        message="Layout has unsaved changes that will be lost. Sign out anyway?"
-        confirmLabel="Sign out"
-        onConfirm={logout}
-        onCancel={() => setConfirmLogout(false)}
-      />
-    </aside>
+      </aside>
+      {narrow && drawerOpen && <div className="sidebar-backdrop" onClick={onCloseDrawer} />}
+    </>
   );
 }
 
-function UtilButton({
-  onClick,
-  disabled,
-  collapsed,
-  label,
-  title,
-  ariaLabel,
-  icon,
-}: {
-  onClick: () => void;
-  disabled?: boolean;
-  collapsed: boolean;
-  label: string;
-  title?: string;
-  ariaLabel: string;
-  icon: ReactNode;
-}) {
+function NavItem({ item, rail, app }: { item: Item; rail: boolean; app?: FleetApp }) {
+  const Icon = item.Icon;
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      title={title}
-      aria-label={ariaLabel}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: collapsed ? "center" : "flex-start",
-        gap: 8,
-        width: "100%",
-        padding: "8px 0",
-        background: "transparent",
-        border: "none",
-        color: "var(--muted)",
-        fontFamily: "var(--font-mono)",
-        fontSize: 10,
-        letterSpacing: collapsed ? "0" : "0.18em",
-        textTransform: "uppercase",
-        cursor: disabled ? "default" : "pointer",
-        opacity: disabled ? 0.6 : 1,
-      }}
+    <NavLink
+      to={item.path}
+      end={item.end}
+      className={({ isActive }) => "sidebar__item" + (isActive ? " is-active" : "")}
+      title={rail ? (app ? `${item.label} · ${app.detail}` : item.label) : app?.detail}
     >
-      <span
-        aria-hidden
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          width: 22,
-          height: 22,
-          flexShrink: 0,
-        }}
-      >
-        {icon}
+      <span className="sidebar__icon" aria-hidden>
+        <Icon size={16} strokeWidth={1.7} />
+        {app && rail && <span className={`sidebar__badge is-${app.state}`} />}
       </span>
-      {!collapsed && <span>{label}</span>}
-    </button>
+      {!rail && <span className="sidebar__text">{item.label}</span>}
+      {app && !rail && (
+        <span className={`sidebar__status is-${app.state}`}>
+          <span className="sidebar__ms">
+            {app.latencyMs == null ? "down" : `${app.latencyMs}ms`}
+          </span>
+          <span className="sidebar__led" aria-hidden />
+          <span className="sr-only">{app.detail}</span>
+        </span>
+      )}
+    </NavLink>
   );
 }

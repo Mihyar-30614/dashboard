@@ -657,33 +657,6 @@ header button:hover {
   margin-bottom: var(--space-1);
 }
 
-/* === Shell responsive chrome === */
-.shell-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding: 14px 28px;
-  border-bottom: 1px solid var(--border);
-  background: transparent;
-  backdrop-filter: blur(8px);
-}
-.shell-main {
-  flex: 1;
-  padding: 28px 32px 64px;
-  overflow: auto;
-  min-width: 0;
-}
-@media (max-width: 768px) {
-  .shell-header {
-    padding: 12px 14px;
-  }
-  .shell-main {
-    padding: 16px 14px 48px;
-  }
-}
-
 /* === Login === */
 .login {
   min-height: 100%;

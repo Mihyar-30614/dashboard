@@ -1,7 +1,9 @@
-import { Outlet, useLocation, useParams } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
+import { Link, Outlet, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Menu } from "lucide-react";
 import Sidebar from "./Sidebar";
-import { useApps, useMe } from "../api/hooks";
+import { fleetSummary, useFleet } from "./fleet";
+import "./shell.css";
 
 function useNow() {
   const [now, setNow] = useState(new Date());
@@ -12,94 +14,84 @@ function useNow() {
   return now;
 }
 
-function useSectionLabel() {
-  const loc = useLocation();
-  const params = useParams();
-  const apps = useApps();
-  return useMemo(() => {
-    const p = loc.pathname;
-    // Overview already titles itself in PageHeader — skip shell echo
-    if (p === "/" || p === "") return "";
-    if (p.startsWith("/analytics")) return "Analytics";
-    if (p.startsWith("/settings")) return "Settings";
-    if (p.startsWith("/app/")) {
-      const slug = p.split("/")[2] || params.slug;
-      const meta = (apps.data as any[] | undefined)?.find(
-        (a) => a.slug === slug,
-      );
-      return meta?.label || slug || "Property";
-    }
-    return "";
-  }, [loc.pathname, params.slug, apps.data]);
+function pad(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+function sinceLabel(from: number | null, now: Date): string {
+  if (!from) return "not checked yet";
+  const s = Math.max(0, Math.round((now.getTime() - from) / 1000));
+  if (s < 60) return `checked ${s}s ago`;
+  return `checked ${Math.round(s / 60)}m ago`;
 }
 
 export default function Shell() {
-  const me = useMe();
   const now = useNow();
-  const section = useSectionLabel();
-  const stamp =
-    now.toISOString().slice(11, 19) + " UTC · " + now.toISOString().slice(0, 10);
+  const fleet = useFleet();
+  const loc = useLocation();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // A drawer link changes the route; close the drawer behind it.
+  useEffect(() => setDrawerOpen(false), [loc.pathname]);
+
+  const utc = `${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}`;
+  const local = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const offsetH = -now.getTimezoneOffset() / 60;
+  const offset = offsetH === 0 ? "" : `UTC${offsetH > 0 ? "+" : ""}${offsetH}`;
 
   return (
-    <div className="shell" style={{ display: "flex", height: "100%" }}>
-      <Sidebar />
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          minWidth: 0,
-        }}
-      >
+    <div className="shell">
+      <Sidebar drawerOpen={drawerOpen} onCloseDrawer={() => setDrawerOpen(false)} />
+      <div className="shell-body">
         <header className="shell-header">
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 18,
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              color: "var(--muted)",
-            }}
+          <button
+            type="button"
+            className="shell-header__menu"
+            onClick={() => setDrawerOpen(true)}
+            aria-label="Open navigation"
           >
+            <Menu size={18} strokeWidth={1.8} />
+          </button>
+
+          <div className="shell-fleet" role="status" aria-live="polite">
+            <span className={`shell-fleet__beacon is-${fleet.worst}`} aria-hidden />
+            <span className="shell-fleet__summary">{fleetSummary(fleet)}</span>
+            <ul className="shell-fleet__apps" aria-label="App status">
+              {fleet.apps.map((a) => (
+                <li key={a.slug}>
+                  <Link
+                    to={`/app/${a.slug}`}
+                    className={`shell-chip is-${a.state}`}
+                    title={`${a.label}: ${a.detail}`}
+                  >
+                    <span className="shell-chip__led" aria-hidden />
+                    <span className="shell-chip__name">{a.label}</span>
+                    <span className="shell-chip__ms">
+                      {a.latencyMs == null ? "down" : `${a.latencyMs}ms`}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="shell-clock">
+            <span className="shell-clock__checked">{sinceLabel(fleet.updatedAt, now)}</span>
             <time
+              className="shell-clock__utc"
               dateTime={now.toISOString()}
-              style={{ color: "var(--ink-soft)" }}
-              title="UTC clock"
+              title={now.toISOString().slice(0, 10) + " UTC"}
             >
-              {stamp}
+              {utc}
+              <span className="shell-clock__sec">:{pad(now.getUTCSeconds())}</span>
+              <span className="shell-clock__zone">UTC</span>
             </time>
-            {section && (
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  paddingLeft: 18,
-                  borderLeft: "1px solid var(--border)",
-                  color: "var(--muted)",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 11,
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
-                }}
-              >
-                {section}
+            {offset && (
+              <span className="shell-clock__local" title={`Local time (${offset})`}>
+                {local} <span className="shell-clock__zone">local</span>
               </span>
             )}
           </div>
-
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              color: "var(--muted)",
-            }}
-          >
-            {me.data?.email}
-          </span>
         </header>
         <main className="shell-main">
           <Outlet />
