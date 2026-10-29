@@ -19,7 +19,7 @@ export type DynamicPaletteItem = {
 };
 
 /** Overview first-add recommendations — glance-before-drill starters. */
-const OVERVIEW_STARTERS = ["app_status", "uptime", "sp_admin_todos"] as const;
+const OVERVIEW_STARTERS = ["ov_fleet", "ov_attention", "ov_week", "pulse"] as const;
 
 const PALETTE_GROUPS: {
   label: string;
@@ -27,6 +27,7 @@ const PALETTE_GROUPS: {
   /** Collapsed by default on overview (secondary catalog). */
   overviewCollapsed?: boolean;
 }[] = [
+  { label: "Across apps", kinds: ["ov_fleet", "ov_attention", "ov_week", "pulse"] },
   { label: "Status", kinds: ["app_status", "health", "pm2", "uptime", "traffic"] },
   {
     label: "Debt & budget",

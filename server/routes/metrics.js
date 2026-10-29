@@ -11,6 +11,7 @@ import { traffic, _resetTrafficForTests } from "../insights/traffic.js";
 import * as dm from "../insights/debtmanager.js";
 import * as sp from "../insights/sportly.js";
 import * as hd from "../insights/honeydoeh.js";
+import * as ov from "../insights/overview.js";
 
 const TTL_MS = 30_000;
 const ERR_TTL_MS = 10_000;
@@ -98,6 +99,12 @@ const KINDS = {
   hd_spend: ({ pool }) => hd.spend(pool),
   hd_price_creep: ({ pool }) => hd.priceCreep(pool),
   hd_todo_flow: ({ pool }) => hd.todoFlow(pool),
+
+  // Cross-app kinds (widgets.json `cross: true`) take no app.
+  ov_fleet: () => ov.fleet(),
+  ov_attention: () => ov.attention(),
+  ov_week: () => ov.week(),
+  pulse: ({ pool, appCfg }) => ov.pulse(pool, appCfg),
 };
 
 const router = Router();
@@ -107,10 +114,10 @@ router.get("/:kind", async (req, res) => {
   const kind = req.params.kind;
   if (!KINDS[kind]) return res.status(400).json({ error: "unknown_kind" });
 
-  const app = String(req.query.app || "");
-  const apps = loadApps();
-  const appCfg = apps[app];
-  if (!appCfg) return res.status(400).json({ error: "unknown_app" });
+  const cross = !!KIND_INDEX[kind]?.cross;
+  const app = cross ? "" : String(req.query.app || "");
+  const appCfg = cross ? null : loadApps()[app];
+  if (!cross && !appCfg) return res.status(400).json({ error: "unknown_app" });
   const only = KIND_INDEX[kind]?.apps;
   if (only && !only.includes(app)) return res.status(400).json({ error: "kind_not_for_app" });
 
@@ -121,7 +128,7 @@ router.get("/:kind", async (req, res) => {
   if (cached) return res.json(cached);
 
   try {
-    const pool = getAppPool(app);
+    const pool = cross ? null : getAppPool(app);
     const data = await KINDS[kind]({ pool, appCfg, params });
     const envelope = { data };
     metricsCache.set(cacheKey, envelope, TTL_MS);

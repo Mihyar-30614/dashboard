@@ -1,5 +1,57 @@
 [
   {
+    "kind": "ov_fleet",
+    "label": "Fleet",
+    "description": "Every app in one strip: up/down, process, requests/min, 5xx, 7-day uptime and the last hour of traffic.",
+    "defaultSize": {
+      "w": 12,
+      "h": 3
+    },
+    "scope": "overview",
+    "cross": true,
+    "paramsSchema": []
+  },
+  {
+    "kind": "ov_attention",
+    "label": "Needs attention",
+    "description": "Everything across the apps that is waiting on you, worst first.",
+    "defaultSize": {
+      "w": 5,
+      "h": 5
+    },
+    "scope": "overview",
+    "cross": true,
+    "paramsSchema": []
+  },
+  {
+    "kind": "ov_week",
+    "label": "Next 7 days",
+    "description": "Games, bills and todos coming up across the apps.",
+    "defaultSize": {
+      "w": 7,
+      "h": 5
+    },
+    "scope": "overview",
+    "cross": true,
+    "paramsSchema": []
+  },
+  {
+    "kind": "pulse",
+    "label": "App pulse",
+    "description": "An app's three or four headline numbers.",
+    "defaultSize": {
+      "w": 4,
+      "h": 4
+    },
+    "scope": "both",
+    "apps": [
+      "sportly",
+      "debtmanager",
+      "honeydoeh"
+    ],
+    "paramsSchema": []
+  },
+  {
     "kind": "app_status",
     "label": "App status",
     "description": "Up/down, process, 5xx in the last hour and the app's background job, in one strip.",

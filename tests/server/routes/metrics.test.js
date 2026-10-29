@@ -6,6 +6,7 @@ import * as pm2 from '@server/collectors/pm2.js';
 import * as health from '@server/collectors/health.js';
 import * as nginx from '@server/collectors/nginx.js';
 import * as dm from '@server/insights/debtmanager.js';
+import * as ov from '@server/insights/overview.js';
 import { _resetForTests } from '@server/routes/metrics.js';
 
 let app, agent;
@@ -98,6 +99,13 @@ describe('GET /api/metrics/:kind', () => {
     vi.spyOn(dm, 'payoff').mockResolvedValue({ on_track: true });
     const res = await agent.get('/api/metrics/dm_payoff?app=debtmanager');
     expect(res.body).toEqual({ data: { on_track: true } });
+  });
+
+  it('cross-app kinds run without an app', async () => {
+    vi.spyOn(ov, 'fleet').mockResolvedValue({ apps: [] });
+    const res = await agent.get('/api/metrics/ov_fleet');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ data: { apps: [] } });
   });
 
   it('caches repeat requests', async () => {

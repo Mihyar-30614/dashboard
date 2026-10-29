@@ -49,5 +49,10 @@ export async function traffic(appCfg) {
     last_5m: last5,
     last_hour: lastHour,
     p95_ms_15m: summarize(s.entries, 15 * 60_000, now).p95_ms,
+    // Requests per 5-minute slot over the last hour, oldest first.
+    buckets: Array.from({ length: 12 }, (_, i) => {
+      const to = now - (11 - i) * 5 * 60_000;
+      return s.entries.filter((e) => e.ts > to - 5 * 60_000 && e.ts <= to).length;
+    }),
   };
 }

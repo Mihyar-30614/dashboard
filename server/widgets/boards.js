@@ -26,11 +26,13 @@ function place(rows, prefix) {
 
 export function defaultBoard(screen, slugs) {
   if (screen === "overview") {
+    // Cross-app widgets ignore `app`; it is set only because every grid item has one.
+    const first = slugs[0];
     return place(
       [
-        slugs.map((s) => w("app_status", s, 4, 3)),
-        slugs.map((s) => w("uptime", s, 4, 2, { range: "7d" })),
-        [w("sp_admin_todos", "sportly", 4, 4)],
+        [w("ov_fleet", first, 12, 4)],
+        [w("ov_attention", first, 5, 5), w("ov_week", first, 7, 5)],
+        slugs.map((s) => w("pulse", s, 4, 5)),
       ],
       "o",
     );

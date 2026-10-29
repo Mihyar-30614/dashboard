@@ -23,6 +23,7 @@ import {
   SpWalletMoney,
 } from "./sportly";
 import { HdPriceCreep, HdSpend, HdTodoFlow } from "./honeydoeh";
+import { OvAttention, OvFleet, OvWeek, Pulse } from "./overview";
 import SqlWidget from "./sql";
 
 type WidgetMeta = (typeof widgetsMeta)[number];
@@ -39,6 +40,10 @@ export type WidgetDef = {
 };
 
 const COMPONENTS: Record<string, FC<any>> = {
+  ov_fleet: OvFleet,
+  ov_attention: OvAttention,
+  ov_week: OvWeek,
+  pulse: Pulse,
   app_status: AppStatus,
   health: HealthCard,
   pm2: Pm2Card,

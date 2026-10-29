@@ -1059,3 +1059,145 @@ header button:hover {
   display: block;
   margin-bottom: 4px;
 }
+
+/* === Overview widgets === */
+.ov-fleet {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: auto;
+  container-type: inline-size;
+}
+.ov-fleet__row {
+  display: grid;
+  grid-template-columns: minmax(96px, 1.4fr) minmax(96px, 1.2fr) 1fr 0.8fr 88px 0.7fr 0.9fr;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 0;
+  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  font-size: var(--text-sm);
+}
+.ov-fleet__row .metric {
+  font-size: 15px;
+}
+.ov-fleet__row--head {
+  border-top: 0;
+  padding-top: 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.ov-fleet__app {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 560;
+  color: var(--ink-soft);
+}
+.ov-fleet__health {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.ov-fleet__health .led {
+  align-self: center;
+}
+.ov-fleet__sub {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted);
+}
+.ov-spark rect {
+  fill: var(--accent);
+  opacity: 0.75;
+}
+/* Narrow card: keep app, health, 5xx and uptime. */
+@container (max-width: 560px) {
+  .ov-fleet__row {
+    grid-template-columns: minmax(80px, 1.3fr) 1fr 0.6fr 0.9fr;
+    gap: 8px;
+  }
+  .ov-fleet__row > :nth-child(3),
+  .ov-fleet__row > :nth-child(4),
+  .ov-fleet__row > :nth-child(5),
+  .ov-fleet__sub {
+    display: none;
+  }
+  .ov-fleet__app {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+.ov-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  color: inherit;
+}
+.ov-item:hover {
+  text-decoration: none;
+}
+.ov-item:hover .ins-list__title {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ov-item .led {
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+.ov-item__sub {
+  display: block;
+}
+.ov-week {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow: auto;
+  min-height: 0;
+  container-type: inline-size;
+}
+.ov-week .ins-list__row {
+  display: grid;
+  grid-template-columns: 5.5em minmax(0, 1fr) auto;
+  align-items: center;
+}
+.ov-week__body .ins-list__title,
+.ov-week__body .ins-list__sub {
+  display: block;
+}
+@container (max-width: 440px) {
+  .ov-week .ins-list__row {
+    grid-template-columns: 3.8em minmax(0, 1fr);
+  }
+  .ov-week .ins-list__end {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+.ov-week__heading {
+  margin: 0 0 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ov-week__time {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+.ov-week__body {
+  flex: 1;
+  min-width: 0;
+}
+.ov-week__done {
+  opacity: 0.6;
+}
+.ov-open {
+  margin-top: auto;
+  font-size: var(--text-sm);
+}
