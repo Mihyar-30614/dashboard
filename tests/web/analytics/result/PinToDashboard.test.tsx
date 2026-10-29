@@ -57,7 +57,7 @@ describe("PinToDashboard", () => {
     mockGets({ admin: false });
     renderWithClient(<Harness qa={QA_FIXTURE} dbName="sportly" onToast={() => {}} />);
     await waitFor(() => expect(api.get).toHaveBeenCalled());
-    expect(screen.queryByText("+ dashboard")).toBeNull();
+    expect(screen.queryByText("Pin to board")).toBeNull();
   });
 
   it("renders nothing when the answer has no SQL", async () => {
@@ -66,7 +66,7 @@ describe("PinToDashboard", () => {
       <Harness qa={{ ...QA_FIXTURE, sql: null }} dbName="sportly" onToast={() => {}} />,
     );
     await waitFor(() => expect(api.get).toHaveBeenCalled());
-    expect(screen.queryByText("+ dashboard")).toBeNull();
+    expect(screen.queryByText("Pin to board")).toBeNull();
   });
 
   it("previews then creates a widget with the inferred viz", async () => {
@@ -83,7 +83,7 @@ describe("PinToDashboard", () => {
     const onToast = vi.fn();
     renderWithClient(<Harness qa={QA_FIXTURE} dbName="sportly" onToast={onToast} />);
 
-    fireEvent.click(await screen.findByText("+ dashboard"));
+    fireEvent.click(await screen.findByText("Pin to board"));
     fireEvent.click(screen.getByText("Add widget"));
 
     await waitFor(() => expect(onToast).toHaveBeenCalledWith(expect.stringMatching(/added/i), "ok"));

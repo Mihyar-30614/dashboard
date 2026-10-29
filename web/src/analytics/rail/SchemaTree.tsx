@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ChevronRight } from "lucide-react";
 import type { SchemaInfo } from "../../api/llm";
 
 export default function SchemaTree({
@@ -34,10 +35,14 @@ export default function SchemaTree({
             type="button"
             className="an-rail__item"
             onClick={() => toggle(t)}
+            aria-expanded={expanded.has(t)}
           >
-            <span style={{ flex: 1 }}>
-              {expanded.has(t) ? "▾" : "▸"} {t}
-            </span>
+            <ChevronRight
+              size={12}
+              strokeWidth={2}
+              className={"an-chev" + (expanded.has(t) ? " is-open" : "")}
+            />
+            <span className="an-rail__label an-schema__name">{t}</span>
           </button>
           {expanded.has(t) && (
             <div className="an-schema__cols">

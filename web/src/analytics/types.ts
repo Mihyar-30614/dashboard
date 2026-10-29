@@ -16,6 +16,8 @@ export type QA = {
   feedback?: "up" | "down";
   error?: string | null;
   defaultTab: ResultTab;
+  /** Restored from the server conversation: answer text only, no rows. */
+  restored?: boolean;
 };
 
 export type AnalyticsState = {

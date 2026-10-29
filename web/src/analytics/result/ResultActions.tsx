@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Copy, Download, Star } from "lucide-react";
 import type { QA, ResultTab } from "../types";
 import { llm, type SavedQueryRequest } from "../../api/llm";
 import { toCsv } from "../../lib/format";
@@ -113,22 +114,31 @@ export default function ResultActions({
     <>
       <button
         type="button"
+        className="an-btn"
         onClick={() => setPanel((p) => (p === "save" ? null : "save"))}
         disabled={!qa.sql}
+        aria-expanded={panel === "save"}
         title={qa.sql ? "Save to your query list" : "No SQL to save"}
       >
-        ★ save
-      </button>
-      <button type="button" onClick={copy} disabled={!canCopy}>
-        copy
+        <Star size={13} strokeWidth={1.8} /> Save
       </button>
       <button
         type="button"
+        className="an-btn"
+        onClick={copy}
+        disabled={!canCopy}
+        title={canCopy ? `Copy the ${activeTab}` : "Switch to table, sql or json to copy"}
+      >
+        <Copy size={13} strokeWidth={1.8} /> Copy
+      </button>
+      <button
+        type="button"
+        className="an-btn"
         onClick={download}
         disabled={!canCsv || exporting}
         title={qa.query_id != null ? "Download every row of this result (re-run on Seer)" : "Download these rows"}
       >
-        {exporting ? "exporting…" : "⬇ csv"}
+        <Download size={13} strokeWidth={1.8} /> {exporting ? "Exporting…" : "CSV"}
       </button>
       <PinToDashboard
         qa={qa}

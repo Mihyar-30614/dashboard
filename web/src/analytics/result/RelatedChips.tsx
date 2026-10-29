@@ -8,6 +8,7 @@ export default function RelatedChips({
   if (!related || related.length === 0) return null;
   return (
     <div className="an-chips">
+      <span className="an-chips__label">Follow up</span>
       {related.map((q) => (
         <button
           key={q}

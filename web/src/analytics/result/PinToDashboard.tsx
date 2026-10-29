@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { LayoutDashboard } from "lucide-react";
 import { useMe } from "../../api/hooks";
 import {
   useSqlDataSources,
@@ -69,8 +70,14 @@ export default function PinToDashboard({
 
   return (
     <>
-      <button type="button" onClick={onToggle} title="Save as dashboard widget">
-        + dashboard
+      <button
+        type="button"
+        className="an-btn"
+        onClick={onToggle}
+        aria-expanded={open}
+        title="Save as dashboard widget"
+      >
+        <LayoutDashboard size={13} strokeWidth={1.8} /> Pin to board
       </button>
       {open && (
         <form className="an-action-pop" onSubmit={add}>

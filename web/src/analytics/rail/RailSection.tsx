@@ -1,4 +1,5 @@
 import { type ReactNode, useState } from "react";
+import { ChevronRight } from "lucide-react";
 
 export default function RailSection({
   title,
@@ -27,9 +28,8 @@ export default function RailSection({
       }}
     >
       <summary>
-        <span className="eyebrow" style={{ flex: 1 }}>
-          {title}
-        </span>
+        <ChevronRight size={12} strokeWidth={2} className={"an-chev" + (open ? " is-open" : "")} />
+        <span className="an-rail__title">{title}</span>
         {typeof count === "number" && (
           <span className="an-rail__count">{count}</span>
         )}

@@ -50,6 +50,7 @@ function turnToQA(t: ConversationTurn): QA | null {
     related: null,
     query_id: null,
     defaultTab: pickTab([]),
+    restored: true,
   };
 }
 
