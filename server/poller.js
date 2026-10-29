@@ -1,9 +1,5 @@
 import { query } from "./db.js";
 import { loadApps } from "./config.js";
-import { getAppPool } from "./appPools.js";
-import * as pgUsers from "./collectors/pgUsers.js";
-import * as pgActivity from "./collectors/pgActivity.js";
-import { runKpi } from "./collectors/pgKpi.js";
 import { snapshot as pm2Snapshot } from "./collectors/pm2.js";
 import { checkHealth } from "./collectors/health.js";
 import { handleHealthSample } from "./alerts.js";
@@ -26,28 +22,14 @@ async function persistSample(slug, metric, value) {
 
 async function pollApp(app) {
   const errors = [];
-  const pool = getAppPool(app.slug);
 
   await Promise.allSettled([
-    pgUsers
-      .total(pool, app)
-      .then((v) => persistSample(app.slug, "users_total", v))
-      .catch((e) => errors.push({ k: "users_total", m: e.message })),
-    pgActivity
-      .dau(pool, app)
-      .then((v) => persistSample(app.slug, "dau", v))
-      .catch((e) => errors.push({ k: "dau", m: e.message })),
     checkHealth(app.health_url)
       .then(async (h) => {
         await persistSample(app.slug, "health_ok", h.ok ? 1 : 0);
         await handleHealthSample(app, h.ok);
       })
       .catch((e) => errors.push({ k: "health", m: e.message })),
-    ...(app.kpis || []).map((kpi) =>
-      runKpi(pool, kpi)
-        .then((v) => persistSample(app.slug, "kpi:" + kpi.key, v))
-        .catch((e) => errors.push({ k: "kpi:" + kpi.key, m: e.message })),
-    ),
   ]);
 
   return errors;

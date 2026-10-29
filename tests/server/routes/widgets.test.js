@@ -17,7 +17,7 @@ describe('GET /api/widgets', () => {
   it('returns registry behind auth', async () => {
     const res = await agent.get('/api/widgets');
     expect(res.status).toBe(200);
-    expect(res.body.find(w => w.kind === 'users_total')).toBeTruthy();
+    expect(res.body.find(w => w.kind === 'app_status')).toBeTruthy();
   });
 
   it('401 without login', async () => {

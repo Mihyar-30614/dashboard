@@ -2,12 +2,10 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import { buildApp } from '@server/app.js';
 import { seedAdmin } from '@server/auth/seed.js';
-import * as pgUsers from '@server/collectors/pgUsers.js';
-import * as pgActivity from '@server/collectors/pgActivity.js';
-import * as pgKpi from '@server/collectors/pgKpi.js';
 import * as pm2 from '@server/collectors/pm2.js';
 import * as health from '@server/collectors/health.js';
 import * as nginx from '@server/collectors/nginx.js';
+import * as dm from '@server/insights/debtmanager.js';
 import { _resetForTests } from '@server/routes/metrics.js';
 
 let app, agent;
@@ -15,17 +13,20 @@ beforeEach(async () => {
   _resetForTests();
   process.env.DASHBOARD_READER_PASSWORD = 'x';
   await seedAdmin('admin@example.com', 'zX9!muPpetDance#Lurking');
-  vi.spyOn(pgUsers, 'total').mockResolvedValue(42);
-  vi.spyOn(pgUsers, 'timeseries').mockResolvedValue([{ t: '2026-05-16', value: 3 }]);
-  vi.spyOn(pgActivity, 'dau').mockResolvedValue(7);
-  vi.spyOn(pgActivity, 'timeseries').mockResolvedValue([{ t: '2026-05-16', value: 2 }]);
-  vi.spyOn(pgKpi, 'runKpi').mockResolvedValue(99);
   vi.spyOn(pm2, 'snapshot').mockResolvedValue({
     'sportly-backend': { status: 'online', cpu: 1, mem_bytes: 100, restarts: 0 }
   });
   vi.spyOn(health, 'checkHealth').mockResolvedValue({ ok: true, status: 200, latency_ms: 5 });
-  vi.spyOn(nginx, 'aggregate').mockResolvedValue({
-    count: 50, errors: 2, errors_5xx: 1, p95_ms: 123, nextOffset: 1024
+  const now = Date.now();
+  vi.spyOn(nginx, 'readNew').mockResolvedValue({
+    entries: [
+      { ts: now - 60_000, status: 200, ms: 40 },
+      { ts: now - 120_000, status: 500, ms: 900 },
+      { ts: now - 30 * 60_000, status: 404, ms: 10 },
+      { ts: now - 2 * 60 * 60_000, status: 500, ms: 10 },
+    ],
+    unmatched: 0,
+    nextOffset: 1024,
   });
   app = buildApp();
   agent = request.agent(app);
@@ -36,7 +37,7 @@ beforeEach(async () => {
 
 describe('GET /api/metrics/:kind', () => {
   it('401 without login', async () => {
-    const res = await request(app).get('/api/metrics/users_total?app=sportly');
+    const res = await request(app).get('/api/metrics/health?app=sportly');
     expect(res.status).toBe(401);
   });
 
@@ -47,20 +48,9 @@ describe('GET /api/metrics/:kind', () => {
   });
 
   it('unknown app returns 400', async () => {
-    const res = await agent.get('/api/metrics/users_total?app=nope');
+    const res = await agent.get('/api/metrics/health?app=nope');
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('unknown_app');
-  });
-
-  it('users_total returns data envelope', async () => {
-    const res = await agent.get('/api/metrics/users_total?app=sportly');
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({ data: 42 });
-  });
-
-  it('dau works', async () => {
-    const res = await agent.get('/api/metrics/dau?app=sportly');
-    expect(res.body.data).toBe(7);
   });
 
   it('health uses configured url', async () => {
@@ -76,40 +66,52 @@ describe('GET /api/metrics/:kind', () => {
     expect(missing.body.data.status).toBe('unknown');
   });
 
-  it('http_rate / http_errors / http_latency share one nginx aggregate', async () => {
-    nginx.aggregate.mockClear();
-    const r1 = await agent.get('/api/metrics/http_rate?app=sportly');
-    const r2 = await agent.get('/api/metrics/http_errors?app=sportly');
-    const r3 = await agent.get('/api/metrics/http_latency?app=sportly');
-    expect(r1.body.data).toBe(50);
-    expect(r2.body.data).toBe(2);
-    expect(r3.body.data).toBe(123);
-    expect(nginx.aggregate).toHaveBeenCalledTimes(1);
+  it('traffic summarises the rolling nginx window', async () => {
+    const res = await agent.get('/api/metrics/traffic?app=sportly');
+    expect(res.body.data.last_5m.count).toBe(2);
+    expect(res.body.data.last_hour).toMatchObject({ count: 3, errors_5xx: 1, errors_4xx: 1 });
+    expect(res.body.data.per_min).toBe(0.4);
+  });
+
+  it('traffic surfaces the collector error instead of a 0', async () => {
+    nginx.readNew.mockResolvedValueOnce({ entries: [], unmatched: 0, nextOffset: null, error: 'log_unreadable' });
+    const res = await agent.get('/api/metrics/traffic?app=honeydoeh');
+    expect(res.body).toEqual({ error: 'log_unreadable' });
+  });
+
+  it('app_status keeps working when one signal fails', async () => {
+    nginx.readNew.mockResolvedValueOnce({ entries: [], unmatched: 0, nextOffset: null, error: 'log_unreadable' });
+    vi.spyOn(dm, 'jobs').mockResolvedValue({ label: 'last reminder email', last_at: null, attention: 0 });
+    const res = await agent.get('/api/metrics/app_status?app=debtmanager');
+    expect(res.body.data.health.ok).toBe(true);
+    expect(res.body.data.http).toEqual({ error: 'log_unreadable' });
+    expect(res.body.data.job.label).toBe('last reminder email');
+  });
+
+  it('app-specific kinds are refused for other apps', async () => {
+    const res = await agent.get('/api/metrics/dm_payoff?app=sportly');
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('kind_not_for_app');
+  });
+
+  it('app-specific kinds run their insight', async () => {
+    vi.spyOn(dm, 'payoff').mockResolvedValue({ on_track: true });
+    const res = await agent.get('/api/metrics/dm_payoff?app=debtmanager');
+    expect(res.body).toEqual({ data: { on_track: true } });
   });
 
   it('caches repeat requests', async () => {
-    pgUsers.total.mockClear();
-    await agent.get('/api/metrics/users_total?app=sportly');
-    await agent.get('/api/metrics/users_total?app=sportly');
-    expect(pgUsers.total).toHaveBeenCalledTimes(1);
+    health.checkHealth.mockClear();
+    await agent.get('/api/metrics/health?app=sportly');
+    await agent.get('/api/metrics/health?app=sportly');
+    expect(health.checkHealth).toHaveBeenCalledTimes(1);
   });
 
   it('caches errors with shorter TTL envelope', async () => {
-    pgUsers.total.mockRejectedValueOnce(new Error('boom'));
-    const res = await agent.get('/api/metrics/users_total?app=honeydoeh');
+    health.checkHealth.mockRejectedValueOnce(new Error('boom'));
+    const res = await agent.get('/api/metrics/health?app=honeydoeh');
     expect(res.status).toBe(200);
     expect(res.body.error).toBe('boom');
-  });
-
-  it('kpi runs the matching SQL block', async () => {
-    const res = await agent.get('/api/metrics/kpi?app=sportly&key=events_week');
-    expect(res.body.data).toBe(99);
-    expect(pgKpi.runKpi).toHaveBeenCalled();
-  });
-
-  it('kpi unknown key returns error envelope', async () => {
-    const res = await agent.get('/api/metrics/kpi?app=sportly&key=nope');
-    expect(res.body.error).toBe('unknown_kpi');
   });
 
   it('uptime buckets health_ok samples over the range', async () => {

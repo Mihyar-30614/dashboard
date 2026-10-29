@@ -3,56 +3,53 @@ import { requireAuth } from "../auth/session.js";
 import { getAppPool } from "../appPools.js";
 import { loadApps } from "../config.js";
 import { metricsCache } from "../cache.js";
-import * as pgUsers from "../collectors/pgUsers.js";
-import * as pgActivity from "../collectors/pgActivity.js";
-import { runKpi } from "../collectors/pgKpi.js";
 import { snapshot as pm2Snapshot } from "../collectors/pm2.js";
 import { checkHealth } from "../collectors/health.js";
-import { aggregate } from "../collectors/nginx.js";
 import { query } from "../db.js";
+import { KIND_INDEX } from "../widgets/registry.js";
+import { traffic, _resetTrafficForTests } from "../insights/traffic.js";
+import * as dm from "../insights/debtmanager.js";
+import * as sp from "../insights/sportly.js";
+import * as hd from "../insights/honeydoeh.js";
 
 const TTL_MS = 30_000;
 const ERR_TTL_MS = 10_000;
-const NGINX_AGG_TTL_MS = 5_000;
-
-const nginxOffsets = new Map();
-const nginxAggCache = new Map();
 
 export function _resetForTests() {
-  nginxOffsets.clear();
-  nginxAggCache.clear();
+  _resetTrafficForTests();
   metricsCache.clear();
 }
 
-async function getNginxAgg(appCfg) {
-  const slug = appCfg.slug;
-  const cached = nginxAggCache.get(slug);
-  if (cached && cached.until > Date.now()) return cached.agg;
-  const off = nginxOffsets.get(slug) || 0;
-  const agg = await aggregate(appCfg.nginx_log, { fromOffset: off });
-  nginxOffsets.set(slug, agg.nextOffset);
-  nginxAggCache.set(slug, { agg, until: Date.now() + NGINX_AGG_TTL_MS });
-  return agg;
+const JOBS = {
+  debtmanager: (pool) => dm.jobs(pool),
+  sportly: (pool) => sp.jobs(pool),
+  honeydoeh: (pool) => hd.jobs(pool),
+};
+
+const settle = (p) => p.then((v) => ({ v }), (e) => ({ e: e.message || "error" }));
+
+async function appStatus({ pool, appCfg }) {
+  const job = JOBS[appCfg.slug];
+  const [health, pm2, http, jobs] = await Promise.all([
+    settle(checkHealth(appCfg.health_url)),
+    settle(pm2Snapshot().then((all) => all[appCfg.pm2_name] || { status: "unknown" })),
+    settle(traffic(appCfg)),
+    job ? settle(job(pool)) : Promise.resolve({ v: null }),
+  ]);
+  return {
+    health: health.v ?? { ok: false, error: health.e },
+    pm2: pm2.v ?? { status: "unknown", error: pm2.e },
+    http: http.v ? { errors_5xx: http.v.last_hour.errors_5xx, count: http.v.last_hour.count } : { error: http.e },
+    job: jobs.v ?? (jobs.e ? { error: jobs.e } : null),
+  };
 }
 
 const KINDS = {
-  users_total: ({ pool, appCfg }) => pgUsers.total(pool, appCfg),
-  signups_timeseries: ({ pool, params, appCfg }) =>
-    pgUsers.timeseries(pool, params, appCfg),
-  dau: ({ pool, appCfg }) => pgActivity.dau(pool, appCfg),
-  active_timeseries: ({ pool, params, appCfg }) =>
-    pgActivity.timeseries(pool, params, appCfg),
   health: ({ appCfg }) => checkHealth(appCfg.health_url),
   pm2: async ({ appCfg }) =>
     (await pm2Snapshot())[appCfg.pm2_name] || { status: "unknown" },
-  http_rate: async ({ appCfg }) => (await getNginxAgg(appCfg)).count,
-  http_errors: async ({ appCfg }) => (await getNginxAgg(appCfg)).errors,
-  http_latency: async ({ appCfg }) => (await getNginxAgg(appCfg)).p95_ms,
-  kpi: ({ pool, appCfg, params }) => {
-    const kpi = (appCfg.kpis || []).find((k) => k.key === params.key);
-    if (!kpi) throw new Error("unknown_kpi");
-    return runKpi(pool, kpi);
-  },
+  traffic: ({ appCfg }) => traffic(appCfg),
+  app_status: appStatus,
   uptime: async ({ params, appCfg }) => {
     const hours = { "24h": 24, "7d": 168, "30d": 720 }[params.range] || 168;
     const BUCKETS = 48;
@@ -79,25 +76,28 @@ const KINDS = {
     );
     return { hours, buckets: rows };
   },
-  kpi_timeseries: async ({ params, appCfg }) => {
-    const slug = appCfg.slug;
-    const days = { "7d": 7, "30d": 30, "90d": 90 }[params.range] || 30;
-    const { rows } = await query(
-      `WITH days AS (
-         SELECT generate_series(date_trunc('day', NOW()) - ($1::int - 1) * INTERVAL '1 day',
-                                date_trunc('day', NOW()), INTERVAL '1 day') AS d
-       )
-       SELECT to_char(days.d, 'YYYY-MM-DD') AS t,
-              AVG(ms.value)::float8 AS value
-         FROM days
-         LEFT JOIN metric_samples ms
-           ON ms.app_slug = $2 AND ms.metric = 'kpi:' || $3
-          AND ms.taken_at >= days.d AND ms.taken_at < days.d + INTERVAL '1 day'
-        GROUP BY days.d ORDER BY days.d`,
-      [days, slug, params.key],
-    );
-    return rows;
-  },
+
+  dm_payoff: ({ pool, appCfg }) => dm.payoff(pool, appCfg),
+  dm_interest: ({ pool, appCfg }) => dm.interest(pool, appCfg),
+  dm_paid_vs_charged: ({ pool, appCfg, params }) => dm.paidVsCharged(pool, appCfg, params),
+  dm_balance_trend: ({ pool, appCfg, params }) => dm.balanceTrend(pool, appCfg, params),
+  dm_utilization: ({ pool, appCfg }) => dm.utilization(pool, appCfg),
+  dm_cashflow: ({ pool, appCfg, params }) => dm.cashflow(pool, appCfg, params),
+  dm_category_movers: ({ pool, appCfg }) => dm.categoryMovers(pool, appCfg),
+  dm_bills_due: ({ pool, appCfg, params }) => dm.billsDue(pool, appCfg, params),
+
+  sp_wallet_money: ({ pool }) => sp.walletMoney(pool),
+  sp_money_flow: ({ pool, appCfg, params }) => sp.moneyFlow(pool, appCfg, params),
+  sp_funnel: ({ pool }) => sp.funnel(pool),
+  sp_growth: ({ pool, appCfg, params }) => sp.growth(pool, appCfg, params),
+  sp_retention: ({ pool }) => sp.retention(pool),
+  sp_invites: ({ pool }) => sp.invites(pool),
+  sp_games: ({ pool }) => sp.games(pool),
+  sp_admin_todos: ({ pool }) => sp.adminTodos(pool),
+
+  hd_spend: ({ pool }) => hd.spend(pool),
+  hd_price_creep: ({ pool }) => hd.priceCreep(pool),
+  hd_todo_flow: ({ pool }) => hd.todoFlow(pool),
 };
 
 const router = Router();
@@ -111,6 +111,8 @@ router.get("/:kind", async (req, res) => {
   const apps = loadApps();
   const appCfg = apps[app];
   if (!appCfg) return res.status(400).json({ error: "unknown_app" });
+  const only = KIND_INDEX[kind]?.apps;
+  if (only && !only.includes(app)) return res.status(400).json({ error: "kind_not_for_app" });
 
   const params = { ...req.query };
   delete params.app;

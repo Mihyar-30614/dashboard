@@ -1,88 +1,14 @@
 [
   {
-    "kind": "users_total",
-    "label": "Users (total)",
-    "description": "Lifetime registered user count for the selected app.",
+    "kind": "app_status",
+    "label": "App status",
+    "description": "Up/down, process, 5xx in the last hour and the app's background job, in one strip.",
     "defaultSize": {
-      "w": 2,
+      "w": 6,
       "h": 2
     },
     "scope": "both",
     "paramsSchema": []
-  },
-  {
-    "kind": "signups_timeseries",
-    "label": "Signups over time",
-    "description": "Daily new account creations plotted over the selected range.",
-    "defaultSize": {
-      "w": 6,
-      "h": 4
-    },
-    "scope": "both",
-    "paramsSchema": [
-      {
-        "name": "range",
-        "type": "enum",
-        "values": [
-          "7d",
-          "30d",
-          "90d"
-        ],
-        "default": "30d"
-      },
-      {
-        "name": "chart_type",
-        "type": "enum",
-        "values": [
-          "line",
-          "bar",
-          "area"
-        ],
-        "default": "line"
-      }
-    ]
-  },
-  {
-    "kind": "dau",
-    "label": "DAU",
-    "description": "Daily active users \u2014 distinct users seen in the last 24h.",
-    "defaultSize": {
-      "w": 2,
-      "h": 2
-    },
-    "scope": "both",
-    "paramsSchema": []
-  },
-  {
-    "kind": "active_timeseries",
-    "label": "DAU over time",
-    "description": "Daily active users trended across the selected range.",
-    "defaultSize": {
-      "w": 6,
-      "h": 4
-    },
-    "scope": "both",
-    "paramsSchema": [
-      {
-        "name": "range",
-        "type": "enum",
-        "values": [
-          "7d",
-          "30d"
-        ],
-        "default": "30d"
-      },
-      {
-        "name": "chart_type",
-        "type": "enum",
-        "values": [
-          "line",
-          "bar",
-          "area"
-        ],
-        "default": "line"
-      }
-    ]
   },
   {
     "kind": "health",
@@ -107,195 +33,6 @@
     "paramsSchema": []
   },
   {
-    "kind": "http_rate",
-    "label": "Requests/sec",
-    "description": "HTTP request throughput from nginx access logs.",
-    "defaultSize": {
-      "w": 4,
-      "h": 3
-    },
-    "scope": "both",
-    "paramsSchema": []
-  },
-  {
-    "kind": "http_errors",
-    "label": "HTTP errors",
-    "description": "Rate of 4xx and 5xx responses over the last window.",
-    "defaultSize": {
-      "w": 4,
-      "h": 3
-    },
-    "scope": "both",
-    "paramsSchema": []
-  },
-  {
-    "kind": "http_latency",
-    "label": "p95 latency",
-    "description": "95th-percentile response time across recent requests.",
-    "defaultSize": {
-      "w": 4,
-      "h": 3
-    },
-    "scope": "both",
-    "paramsSchema": []
-  },
-  {
-    "kind": "kpi",
-    "label": "KPI value",
-    "description": "Single configured KPI displayed as a large numeric readout.",
-    "defaultSize": {
-      "w": 3,
-      "h": 2
-    },
-    "scope": "app",
-    "paramsSchema": [
-      {
-        "name": "key",
-        "type": "string",
-        "required": true
-      }
-    ]
-  },
-  {
-    "kind": "kpi_timeseries",
-    "label": "KPI over time",
-    "description": "Configured KPI trended as a line chart over time.",
-    "defaultSize": {
-      "w": 6,
-      "h": 4
-    },
-    "scope": "app",
-    "paramsSchema": [
-      {
-        "name": "key",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "range",
-        "type": "enum",
-        "values": [
-          "7d",
-          "30d",
-          "90d"
-        ],
-        "default": "30d"
-      },
-      {
-        "name": "chart_type",
-        "type": "enum",
-        "values": [
-          "line",
-          "bar",
-          "area"
-        ],
-        "default": "line"
-      }
-    ]
-  },
-  {
-    "kind": "kpi_sparkline",
-    "label": "KPI \u00b7 sparkline",
-    "description": "Compact KPI value with inline sparkline showing recent trend.",
-    "defaultSize": {
-      "w": 3,
-      "h": 2
-    },
-    "scope": "app",
-    "paramsSchema": [
-      {
-        "name": "key",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "range",
-        "type": "enum",
-        "values": [
-          "7d",
-          "30d",
-          "90d"
-        ],
-        "default": "30d"
-      }
-    ]
-  },
-  {
-    "kind": "kpi_delta",
-    "label": "KPI \u00b7 delta vs prior",
-    "description": "Current KPI value plus change vs the prior period.",
-    "defaultSize": {
-      "w": 3,
-      "h": 2
-    },
-    "scope": "app",
-    "paramsSchema": [
-      {
-        "name": "key",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "range",
-        "type": "enum",
-        "values": [
-          "7d",
-          "30d",
-          "90d"
-        ],
-        "default": "30d"
-      }
-    ]
-  },
-  {
-    "kind": "kpi_target",
-    "label": "KPI \u00b7 target",
-    "description": "KPI value with progress bar toward a configured target.",
-    "defaultSize": {
-      "w": 3,
-      "h": 2
-    },
-    "scope": "app",
-    "paramsSchema": [
-      {
-        "name": "key",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "target",
-        "type": "number",
-        "required": true
-      },
-      {
-        "name": "direction",
-        "type": "enum",
-        "values": [
-          "higher_is_better",
-          "lower_is_better"
-        ],
-        "default": "higher_is_better"
-      }
-    ]
-  },
-  {
-    "kind": "kpi_multistat",
-    "label": "KPI \u00b7 multi-stat",
-    "description": "Side-by-side readout of several KPIs in one card.",
-    "defaultSize": {
-      "w": 6,
-      "h": 2
-    },
-    "scope": "app",
-    "paramsSchema": [
-      {
-        "name": "keys",
-        "type": "string",
-        "required": true
-      }
-    ]
-  },
-  {
     "kind": "uptime",
     "label": "Uptime",
     "description": "Health-check uptime history as a green/amber/red segment strip.",
@@ -316,6 +53,348 @@
         "default": "7d"
       }
     ]
+  },
+  {
+    "kind": "traffic",
+    "label": "Traffic",
+    "description": "Requests per minute, 4xx/5xx in the last hour and p95 latency from the nginx access log.",
+    "defaultSize": {
+      "w": 4,
+      "h": 3
+    },
+    "scope": "both",
+    "paramsSchema": []
+  },
+  {
+    "kind": "dm_payoff",
+    "label": "Debt-free date",
+    "description": "When you'll be debt-free at your actual 3-month pace, interest still to pay, and where the next dollar should go.",
+    "defaultSize": {
+      "w": 6,
+      "h": 4
+    },
+    "scope": "app",
+    "apps": [
+      "debtmanager"
+    ],
+    "paramsSchema": []
+  },
+  {
+    "kind": "dm_interest",
+    "label": "Interest burn",
+    "description": "What interest costs this month and per day, debt by debt.",
+    "defaultSize": {
+      "w": 6,
+      "h": 4
+    },
+    "scope": "app",
+    "apps": [
+      "debtmanager"
+    ],
+    "paramsSchema": []
+  },
+  {
+    "kind": "dm_paid_vs_charged",
+    "label": "Paid vs charged",
+    "description": "Monthly payments against new charges; flags months you charged more than you paid.",
+    "defaultSize": {
+      "w": 6,
+      "h": 4
+    },
+    "scope": "app",
+    "apps": [
+      "debtmanager"
+    ],
+    "paramsSchema": [
+      {
+        "name": "period",
+        "type": "enum",
+        "values": [
+          "6m",
+          "12m"
+        ],
+        "default": "12m"
+      }
+    ]
+  },
+  {
+    "kind": "dm_balance_trend",
+    "label": "Balance trajectory",
+    "description": "Total debt over time with new debts labelled and the projected path to zero.",
+    "defaultSize": {
+      "w": 12,
+      "h": 4
+    },
+    "scope": "app",
+    "apps": [
+      "debtmanager"
+    ],
+    "paramsSchema": [
+      {
+        "name": "period",
+        "type": "enum",
+        "values": [
+          "90d",
+          "180d",
+          "1y",
+          "all"
+        ],
+        "default": "1y"
+      }
+    ]
+  },
+  {
+    "kind": "dm_utilization",
+    "label": "Credit utilization",
+    "description": "Each card and line of credit against its limit, with the 10% and 30% marks.",
+    "defaultSize": {
+      "w": 6,
+      "h": 4
+    },
+    "scope": "app",
+    "apps": [
+      "debtmanager"
+    ],
+    "paramsSchema": []
+  },
+  {
+    "kind": "dm_cashflow",
+    "label": "Income vs spending",
+    "description": "Monthly income, living costs and debt payoff, with your savings rate.",
+    "defaultSize": {
+      "w": 6,
+      "h": 4
+    },
+    "scope": "app",
+    "apps": [
+      "debtmanager"
+    ],
+    "paramsSchema": [
+      {
+        "name": "period",
+        "type": "enum",
+        "values": [
+          "6m",
+          "12m"
+        ],
+        "default": "12m"
+      }
+    ]
+  },
+  {
+    "kind": "dm_category_movers",
+    "label": "Category movers",
+    "description": "This month's spending by category against the same days of the last three months.",
+    "defaultSize": {
+      "w": 6,
+      "h": 4
+    },
+    "scope": "app",
+    "apps": [
+      "debtmanager"
+    ],
+    "paramsSchema": []
+  },
+  {
+    "kind": "dm_bills_due",
+    "label": "Bills due",
+    "description": "Debt payments due soon, with minimums and whether they're already covered.",
+    "defaultSize": {
+      "w": 6,
+      "h": 3
+    },
+    "scope": "app",
+    "apps": [
+      "debtmanager"
+    ],
+    "paramsSchema": [
+      {
+        "name": "days",
+        "type": "enum",
+        "values": [
+          "7",
+          "14",
+          "30"
+        ],
+        "default": "14"
+      }
+    ]
+  },
+  {
+    "kind": "sp_wallet_money",
+    "label": "Wallet money",
+    "description": "Money added, withdrawn and still in players' wallets, with a reconciliation check.",
+    "defaultSize": {
+      "w": 6,
+      "h": 4
+    },
+    "scope": "app",
+    "apps": [
+      "sportly"
+    ],
+    "paramsSchema": []
+  },
+  {
+    "kind": "sp_money_flow",
+    "label": "Money flow",
+    "description": "Weekly top-ups, game fees, host settlements and withdrawals.",
+    "defaultSize": {
+      "w": 6,
+      "h": 4
+    },
+    "scope": "app",
+    "apps": [
+      "sportly"
+    ],
+    "paramsSchema": [
+      {
+        "name": "period",
+        "type": "enum",
+        "values": [
+          "8w",
+          "12w",
+          "26w"
+        ],
+        "default": "12w"
+      }
+    ]
+  },
+  {
+    "kind": "sp_funnel",
+    "label": "Activation funnel",
+    "description": "Signed up, verified, first game, first paid game, second game.",
+    "defaultSize": {
+      "w": 6,
+      "h": 4
+    },
+    "scope": "app",
+    "apps": [
+      "sportly"
+    ],
+    "paramsSchema": []
+  },
+  {
+    "kind": "sp_growth",
+    "label": "Launch curve",
+    "description": "Daily signups next to first-time game joins.",
+    "defaultSize": {
+      "w": 6,
+      "h": 4
+    },
+    "scope": "app",
+    "apps": [
+      "sportly"
+    ],
+    "paramsSchema": [
+      {
+        "name": "range",
+        "type": "enum",
+        "values": [
+          "7d",
+          "30d",
+          "90d"
+        ],
+        "default": "30d"
+      }
+    ]
+  },
+  {
+    "kind": "sp_retention",
+    "label": "Comeback rate",
+    "description": "Share of players who join again, games per player, and who has gone quiet.",
+    "defaultSize": {
+      "w": 6,
+      "h": 4
+    },
+    "scope": "app",
+    "apps": [
+      "sportly"
+    ],
+    "paramsSchema": []
+  },
+  {
+    "kind": "sp_invites",
+    "label": "Invite loop",
+    "description": "Invites sent and accepted, and the players bringing others in.",
+    "defaultSize": {
+      "w": 6,
+      "h": 4
+    },
+    "scope": "app",
+    "apps": [
+      "sportly"
+    ],
+    "paramsSchema": []
+  },
+  {
+    "kind": "sp_games",
+    "label": "Game economics",
+    "description": "Recent and upcoming games: spots filled, fees collected, host paid.",
+    "defaultSize": {
+      "w": 12,
+      "h": 4
+    },
+    "scope": "app",
+    "apps": [
+      "sportly"
+    ],
+    "paramsSchema": []
+  },
+  {
+    "kind": "sp_admin_todos",
+    "label": "Admin to-dos",
+    "description": "Withdrawals, e-Transfers, refunds, support cases and feedback waiting on you.",
+    "defaultSize": {
+      "w": 4,
+      "h": 4
+    },
+    "scope": "both",
+    "apps": [
+      "sportly"
+    ],
+    "paramsSchema": []
+  },
+  {
+    "kind": "hd_spend",
+    "label": "Spend this month",
+    "description": "Shopping spend so far this month against last month and your 3-month average, by category.",
+    "defaultSize": {
+      "w": 6,
+      "h": 4
+    },
+    "scope": "app",
+    "apps": [
+      "honeydoeh"
+    ],
+    "paramsSchema": []
+  },
+  {
+    "kind": "hd_price_creep",
+    "label": "Price creep",
+    "description": "Items you buy repeatedly, latest price against the first, biggest increases first.",
+    "defaultSize": {
+      "w": 6,
+      "h": 4
+    },
+    "scope": "app",
+    "apps": [
+      "honeydoeh"
+    ],
+    "paramsSchema": []
+  },
+  {
+    "kind": "hd_todo_flow",
+    "label": "Todo flow",
+    "description": "Todos created vs completed per week, backlog, overdue and time to finish.",
+    "defaultSize": {
+      "w": 6,
+      "h": 4
+    },
+    "scope": "app",
+    "apps": [
+      "honeydoeh"
+    ],
+    "paramsSchema": []
   },
   {
     "kind": "sql",

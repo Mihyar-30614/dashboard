@@ -10,6 +10,6 @@ describe('loadApps', () => {
     expect(apps.honeydoeh.db.password).toBe('shared-pw');
     expect(apps.debtmanager.db.password).toBe('shared-pw');
     expect(apps.sportly.slug).toBe('sportly');
-    expect(Array.isArray(apps.sportly.kpis)).toBe(true);
+    expect(apps.debtmanager.owner_email).toMatch(/@/);
   });
 });

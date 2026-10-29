@@ -22,7 +22,7 @@ describe('layouts', () => {
   });
 
   it('saves and retrieves a custom layout', async () => {
-    const layout = [{ id: 'w_1', kind: 'users_total', app: 'sportly', x: 0, y: 0, w: 2, h: 2, params: {} }];
+    const layout = [{ id: 'w_1', kind: 'health', app: 'sportly', x: 0, y: 0, w: 2, h: 2, params: {} }];
     const put = await agent.put('/api/layouts/sportly').send({ layout });
     expect(put.status).toBe(200);
     const get = await agent.get('/api/layouts/sportly');

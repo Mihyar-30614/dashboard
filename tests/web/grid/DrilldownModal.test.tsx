@@ -17,13 +17,13 @@ vi.mock("@/api/client", () => ({
 
 const WIDGET: GridWidget = {
   id: "w_1",
-  kind: "kpi_timeseries",
+  kind: "sp_growth",
   app: "sportly",
   x: 0,
   y: 0,
   w: 6,
   h: 4,
-  params: { key: "mrr" },
+  params: {},
 };
 
 function wrap(ui: React.ReactElement) {

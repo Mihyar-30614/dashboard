@@ -208,7 +208,7 @@ export function useLayoutPage({
     if (!layoutEditing) setLayoutEditing(true);
     setFitUndo(null);
     const app =
-      defaultApp ?? apps.data?.[0]?.slug ?? appSlug ?? undefined;
+      def.apps?.[0] ?? defaultApp ?? apps.data?.[0]?.slug ?? appSlug ?? undefined;
     const nextY = local.reduce((m, w) => Math.max(m, w.y + w.h), 0);
     const next = [
       ...local,

@@ -1,69 +1,13 @@
 import WidgetFrame from "../grid/WidgetFrame";
 import Skeleton from "../grid/Skeleton";
 import { useMetric } from "../api/hooks";
+import { Hero, InsightFrame, Note, Stats, ago, useInsight } from "./parts";
 
 type WidgetProps = {
   app: string;
   params?: any;
   onRemove?: () => void;
 };
-
-function ScalarMetric({
-  loading,
-  value,
-  caption,
-}: {
-  loading: boolean;
-  value: unknown;
-  caption?: string;
-}) {
-  return (
-    <div className="metric-widget">
-      <div className="metric metric--xl">
-        {loading ? (
-          <Skeleton variant="block" width={120} height={40} />
-        ) : (
-          String(value ?? "—")
-        )}
-      </div>
-      {caption && <div className="eyebrow metric-widget__caption">{caption}</div>}
-    </div>
-  );
-}
-
-export function UsersTotal({ app, onRemove }: WidgetProps) {
-  const q = useMetric("users_total", { app });
-  return (
-    <WidgetFrame
-      title={`users · ${app}`}
-      onRemove={onRemove}
-      error={(q.data as any)?.error || (q.error as any)?.message}
-    >
-      <ScalarMetric
-        loading={q.isLoading}
-        value={(q.data as any)?.data}
-        caption="total registered"
-      />
-    </WidgetFrame>
-  );
-}
-
-export function DauCard({ app, onRemove }: WidgetProps) {
-  const q = useMetric("dau", { app });
-  return (
-    <WidgetFrame
-      title={`dau · ${app}`}
-      onRemove={onRemove}
-      error={(q.data as any)?.error || (q.error as any)?.message}
-    >
-      <ScalarMetric
-        loading={q.isLoading}
-        value={(q.data as any)?.data}
-        caption="active · last 24h"
-      />
-    </WidgetFrame>
-  );
-}
 
 export function HealthCard({ app, onRemove }: WidgetProps) {
   const q = useMetric("health", { app });
@@ -135,76 +79,6 @@ export function Pm2Card({ app, onRemove }: WidgetProps) {
   );
 }
 
-export function HttpRate({ app, onRemove }: WidgetProps) {
-  const q = useMetric("http_rate", { app });
-  return (
-    <WidgetFrame
-      title={`requests · ${app}`}
-      onRemove={onRemove}
-      meta="last collector tick"
-      error={(q.data as any)?.error || (q.error as any)?.message}
-    >
-      <div className="metric-widget">
-        <div className="metric metric--xl">
-          {q.isLoading ? (
-            <Skeleton variant="block" width={120} height={40} />
-          ) : (
-            ((q.data as any)?.data ?? "—")
-          )}
-        </div>
-      </div>
-    </WidgetFrame>
-  );
-}
-
-export function HttpErrors({ app, onRemove }: WidgetProps) {
-  const q = useMetric("http_errors", { app });
-  const v = (q.data as any)?.data;
-  const bad = typeof v === "number" && v > 0;
-  return (
-    <WidgetFrame
-      title={`errors · ${app}`}
-      onRemove={onRemove}
-      meta="last collector tick"
-      error={(q.data as any)?.error || (q.error as any)?.message}
-    >
-      <div className="metric-widget">
-        <div className={`metric metric--xl${bad ? " metric-widget__value--bad" : ""}`}>
-          {q.isLoading ? (
-            <Skeleton variant="block" width={120} height={40} />
-          ) : (
-            (v ?? "—")
-          )}
-        </div>
-      </div>
-    </WidgetFrame>
-  );
-}
-
-export function HttpLatency({ app, onRemove }: WidgetProps) {
-  const q = useMetric("http_latency", { app });
-  const v = (q.data as any)?.data;
-  return (
-    <WidgetFrame
-      title={`p95 latency · ${app}`}
-      onRemove={onRemove}
-      meta="ms · last tick"
-      error={(q.data as any)?.error || (q.error as any)?.message}
-    >
-      <div className="metric-widget">
-        <div className="metric metric--xl">
-          {q.isLoading ? (
-            <Skeleton variant="block" width={100} height={40} />
-          ) : (
-            (v ?? "—")
-          )}
-          <span className="metric-widget__unit">ms</span>
-        </div>
-      </div>
-    </WidgetFrame>
-  );
-}
-
 export type UptimeBucket = { bucket: number; ratio: number | null; samples: number };
 
 export function bucketColor(ratio: number | null, samples: number): string {
@@ -261,5 +135,98 @@ export function UptimeStrip({ app, params = {}, onRemove }: WidgetProps) {
         </div>
       )}
     </WidgetFrame>
+  );
+}
+
+type Traffic = {
+  per_min: number;
+  last_5m: { count: number };
+  last_hour: { count: number; errors_4xx: number; errors_5xx: number };
+  p95_ms_15m: number;
+};
+
+const LOG_HINT: Record<string, string> = {
+  log_unreadable: "No access log for this app yet. Apply config/nginx/observatory-log.conf.",
+  log_format_unrecognized: "The access log has no $request_time. Use the observatory log format.",
+};
+
+export function TrafficCard({ app, onRemove }: WidgetProps) {
+  const { data: d, error, loading } = useInsight<Traffic>("traffic", { app });
+  return (
+    <InsightFrame title="Traffic" meta={app} loading={loading} error={error} onRemove={onRemove}>
+      {d ? (
+        <div className="ins-stack">
+          <Hero value={d.per_min} label="requests / min · last 5 min" />
+          <Stats
+            items={[
+              { label: "requests 1h", value: d.last_hour.count },
+              { label: "4xx 1h", value: d.last_hour.errors_4xx, tone: d.last_hour.errors_4xx ? "warn" : undefined },
+              { label: "5xx 1h", value: d.last_hour.errors_5xx, tone: d.last_hour.errors_5xx ? "bad" : "ok" },
+              { label: "p95 15m", value: `${d.p95_ms_15m}ms` },
+            ]}
+          />
+        </div>
+      ) : (
+        error && LOG_HINT[error] && <Note tone="warn">{LOG_HINT[error]}</Note>
+      )}
+    </InsightFrame>
+  );
+}
+
+type AppStatusData = {
+  health: { ok: boolean; status?: number; latency_ms?: number; error?: string };
+  pm2: { status: string; cpu?: number; mem_bytes?: number; restarts?: number };
+  http: { errors_5xx?: number; count?: number; error?: string };
+  job: { label: string; value?: number; last_at?: string | null; attention: number; error?: string } | null;
+};
+
+export function AppStatus({ app, onRemove }: WidgetProps) {
+  const { data: d, error, loading } = useInsight<AppStatusData>("app_status", { app });
+  return (
+    <InsightFrame title={app} meta="status" loading={loading} error={error} onRemove={onRemove}>
+      {d && (
+        <div className="ins-status">
+          <div className="ins-status__cell">
+            <span className={`led led--lg ${d.health.ok ? "led--ok" : "led--bad"}`} />
+            <div>
+              <div className={`metric ins-tone--${d.health.ok ? "ok" : "bad"}`}>{d.health.ok ? "UP" : "DOWN"}</div>
+              <div className="ins-status__sub">
+                {d.health.latency_ms != null ? `${d.health.latency_ms}ms` : d.health.error ?? "—"}
+              </div>
+            </div>
+          </div>
+          <div className="ins-status__cell">
+            <div>
+              <div className={`metric ins-tone--${d.pm2.status === "online" ? "ok" : "bad"}`}>{d.pm2.status}</div>
+              <div className="ins-status__sub">
+                {/* pm2 reports 0/0 when it can't sample the process; that isn't a reading. */}
+                {d.pm2.cpu || d.pm2.mem_bytes
+                  ? `${d.pm2.cpu}% cpu · ${Math.round((d.pm2.mem_bytes ?? 0) / 1e6)}MB`
+                  : "pm2"}
+                {d.pm2.restarts ? ` · ${d.pm2.restarts} restarts` : ""}
+              </div>
+            </div>
+          </div>
+          <div className="ins-status__cell" title={d.http.error}>
+            <div>
+              <div className={`metric ${d.http.error ? "" : d.http.errors_5xx ? "ins-tone--bad" : "ins-tone--ok"}`}>
+                {d.http.error ? "—" : d.http.errors_5xx}
+              </div>
+              <div className="ins-status__sub">{d.http.error ? "no access log" : `5xx of ${d.http.count} req · 1h`}</div>
+            </div>
+          </div>
+          {d.job && (
+            <div className="ins-status__cell" title={d.job.error}>
+              <div>
+                <div className={`metric ${d.job.attention ? "ins-tone--warn" : ""}`}>
+                  {d.job.error ? "—" : d.job.value ?? ago(d.job.last_at)}
+                </div>
+                <div className="ins-status__sub">{d.job.label}</div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </InsightFrame>
   );
 }

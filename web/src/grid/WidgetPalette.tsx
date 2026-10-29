@@ -19,7 +19,7 @@ export type DynamicPaletteItem = {
 };
 
 /** Overview first-add recommendations — glance-before-drill starters. */
-const OVERVIEW_STARTERS = ["health", "pm2", "uptime"] as const;
+const OVERVIEW_STARTERS = ["app_status", "uptime", "sp_admin_todos"] as const;
 
 const PALETTE_GROUPS: {
   label: string;
@@ -27,29 +27,23 @@ const PALETTE_GROUPS: {
   /** Collapsed by default on overview (secondary catalog). */
   overviewCollapsed?: boolean;
 }[] = [
-  { label: "Status", kinds: ["health", "pm2", "uptime"] },
+  { label: "Status", kinds: ["app_status", "health", "pm2", "uptime", "traffic"] },
   {
-    label: "Traffic",
-    kinds: ["http_rate", "http_errors", "http_latency"],
-    overviewCollapsed: true,
-  },
-  {
-    label: "Users",
-    kinds: ["users_total", "dau", "signups_timeseries", "active_timeseries"],
-    overviewCollapsed: true,
-  },
-  {
-    label: "KPIs",
+    label: "Debt & budget",
     kinds: [
-      "kpi",
-      "kpi_timeseries",
-      "kpi_sparkline",
-      "kpi_delta",
-      "kpi_target",
-      "kpi_multistat",
+      "dm_payoff",
+      "dm_interest",
+      "dm_balance_trend",
+      "dm_paid_vs_charged",
+      "dm_utilization",
+      "dm_cashflow",
+      "dm_category_movers",
+      "dm_bills_due",
     ],
-    overviewCollapsed: true,
   },
+  { label: "Money", kinds: ["sp_wallet_money", "sp_money_flow", "sp_games", "sp_admin_todos"] },
+  { label: "Players", kinds: ["sp_funnel", "sp_growth", "sp_retention", "sp_invites"] },
+  { label: "Household", kinds: ["hd_spend", "hd_price_creep", "hd_todo_flow"] },
 ];
 
 function PaletteButton({
@@ -286,7 +280,10 @@ export default function WidgetPalette({
   if (!open) return null;
 
   const staticItems = Object.entries(WIDGETS).filter(
-    ([kind, w]) => kind !== "sql" && (w.scope === scope || w.scope === "both"),
+    ([kind, w]) =>
+      kind !== "sql" &&
+      (w.scope === scope || w.scope === "both") &&
+      (scope === "overview" || !w.apps || (!!appSlug && w.apps.includes(appSlug))),
   );
   const staticMap = new Map(staticItems);
   const groupedKinds = new Set(PALETTE_GROUPS.flatMap((g) => g.kinds));

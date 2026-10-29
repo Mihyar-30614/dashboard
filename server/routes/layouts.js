@@ -3,6 +3,7 @@ import { query } from "../db.js";
 import { requireAuth } from "../auth/session.js";
 import { KIND_INDEX } from "../widgets/registry.js";
 import { loadApps, validScreens } from "../config.js";
+import { defaultBoard } from "../widgets/boards.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -17,73 +18,7 @@ function validateLayout(arr) {
 }
 
 function defaultLayout(screen) {
-  if (screen === "overview") {
-    const slugs = Object.keys(loadApps());
-    return slugs.flatMap((slug, i) => [
-      {
-        id: `h_${slug}`,
-        kind: "health",
-        app: slug,
-        x: 0,
-        y: i * 2,
-        w: 4,
-        h: 2,
-        params: {},
-      },
-      {
-        id: `p_${slug}`,
-        kind: "pm2",
-        app: slug,
-        x: 4,
-        y: i * 2,
-        w: 4,
-        h: 2,
-        params: {},
-      },
-    ]);
-  }
-  return [
-    {
-      id: "d1",
-      kind: "users_total",
-      app: screen,
-      x: 0,
-      y: 0,
-      w: 2,
-      h: 2,
-      params: {},
-    },
-    {
-      id: "d2",
-      kind: "dau",
-      app: screen,
-      x: 2,
-      y: 0,
-      w: 2,
-      h: 2,
-      params: {},
-    },
-    {
-      id: "d3",
-      kind: "signups_timeseries",
-      app: screen,
-      x: 0,
-      y: 2,
-      w: 6,
-      h: 4,
-      params: { range: "30d" },
-    },
-    {
-      id: "d4",
-      kind: "active_timeseries",
-      app: screen,
-      x: 6,
-      y: 2,
-      w: 6,
-      h: 4,
-      params: { range: "30d" },
-    },
-  ];
+  return defaultBoard(screen, Object.keys(loadApps()));
 }
 
 router.get("/:screen", async (req, res) => {
