@@ -52,6 +52,11 @@ export default defineConfig({
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/api\//],
         cleanupOutdatedCaches: true,
+        // The plugin only adds these for autoUpdate when it injects the register
+        // script itself; with injectRegister: false a new worker would wait until
+        // every tab closed, so reloads kept serving the old bundle.
+        skipWaiting: true,
+        clientsClaim: true,
       },
     }),
   ],
