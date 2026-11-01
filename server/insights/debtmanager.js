@@ -230,19 +230,33 @@ export async function cashflow(pool, appCfg, params) {
          FROM b LEFT JOIN budget_incomes i ON i.budget_id = b.id
         GROUP BY b.year, b.month
      ),
+     -- Same month model as DebtManager (backend/src/utils/debtFlows.js): a
+     -- purchase counts when made, cash or card, so living is every expense not
+     -- synced from a payment; a payment only counts for what it paid down
+     -- beyond new charges. Counting payment rows as payoff spent each card
+     -- purchase twice: once in living, again in the payment that cleared it.
      exp AS (
        SELECT b.year, b.month,
-              COALESCE(SUM(e.amount_cents) FILTER (WHERE NOT c.is_debt_payoff), 0)::float8 AS living,
-              COALESCE(SUM(e.amount_cents) FILTER (WHERE c.is_debt_payoff), 0)::float8 AS payoff
+              COALESCE(SUM(e.amount_cents) FILTER (WHERE e.payment_id IS NULL), 0)::float8 AS living
          FROM b JOIN budget_categories c ON c.budget_id = b.id
          JOIN budget_expenses e ON e.budget_category_id = c.id
         GROUP BY b.year, b.month
+     ),
+     flows AS (
+       SELECT b.year, b.month,
+              COALESCE((SELECT SUM(p.amount_cents) FROM payments p JOIN debts d ON d.id = p.debt_id
+                         WHERE d.user_id = $1 AND p.paid_on >= make_date(b.year, b.month, 1)
+                           AND p.paid_on < make_date(b.year, b.month, 1) + INTERVAL '1 month'), 0)::float8 AS paid,
+              COALESCE((SELECT SUM(ch.amount_cents) FROM charges ch JOIN debts d ON d.id = ch.debt_id
+                         WHERE d.user_id = $1 AND ch.charged_on >= make_date(b.year, b.month, 1)
+                           AND ch.charged_on < make_date(b.year, b.month, 1) + INTERVAL '1 month'), 0)::float8 AS charged
+         FROM b
      )
      SELECT to_char(make_date(inc.year, inc.month, 1), 'YYYY-MM') AS month,
             CASE WHEN inc.received > 0 THEN inc.received ELSE inc.planned END AS income_cents,
             COALESCE(exp.living, 0) AS living_cents,
-            COALESCE(exp.payoff, 0) AS payoff_cents
-       FROM inc LEFT JOIN exp USING (year, month)
+            GREATEST(0, COALESCE(flows.paid, 0) - COALESCE(flows.charged, 0)) AS payoff_cents
+       FROM inc LEFT JOIN exp USING (year, month) LEFT JOIN flows USING (year, month)
       ORDER BY inc.year, inc.month`,
     [me.id, months],
   );
@@ -266,7 +280,7 @@ export async function categoryMovers(pool, appCfg) {
          FROM budget_expenses e
          JOIN budget_categories c ON c.id = e.budget_category_id
          JOIN budgets b ON b.id = c.budget_id
-        WHERE b.user_id = $1 AND NOT c.is_debt_payoff
+        WHERE b.user_id = $1 AND NOT c.is_debt_payoff AND e.payment_id IS NULL
           AND e.spent_on >= date_trunc('month', CURRENT_DATE) - INTERVAL '3 months'
           AND EXTRACT(DAY FROM e.spent_on) <= EXTRACT(DAY FROM CURRENT_DATE)
      )
