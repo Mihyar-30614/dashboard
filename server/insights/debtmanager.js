@@ -58,6 +58,29 @@ function addMonths(date, n) {
 
 const avg = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 
+/**
+ * Months from now to the projection's month 1. It starts from today's
+ * balances, so once every owed debt has this month's payment logged (in the
+ * owner's timezone) those payments are already in them and month 1 is next
+ * month. Mirrors DebtManager's planStartOffset (backend/src/utils/planning.js),
+ * so the two debt-free dates agree.
+ */
+async function startOffset(pool, userId, owing) {
+  if (!owing.length) return 0;
+  const { rows } = await pool.query(
+    `WITH m AS (
+       SELECT date_trunc('month', (now() AT TIME ZONE COALESCE(u.timezone, 'UTC')))::date AS start
+         FROM users u WHERE u.id = $1
+     )
+     SELECT DISTINCT p.debt_id::int AS id
+       FROM payments p JOIN debts d ON d.id = p.debt_id, m
+      WHERE d.user_id = $1 AND p.paid_on >= m.start AND p.paid_on < m.start + INTERVAL '1 month'`,
+    [userId],
+  );
+  const paid = new Set(rows.map((r) => r.id));
+  return owing.every((d) => paid.has(d.id)) ? 1 : 0;
+}
+
 async function payoffModel(pool, userId) {
   const [debts, flows] = await Promise.all([
     activeDebts(pool, userId),
@@ -72,7 +95,8 @@ async function payoffModel(pool, userId) {
   const plan = generatePlan(owing, paceCents);
   const minOnlyCents = owing.reduce((s, d) => s + (d.min_payment_cents || 0), 0);
   const minOnly = generatePlan(owing, minOnlyCents);
-  return { debts: owing, paidAvg, chargedAvg, paceCents, plan, minOnly, minOnlyCents };
+  const offset = await startOffset(pool, userId, owing);
+  return { debts: owing, paidAvg, chargedAvg, paceCents, plan, minOnly, minOnlyCents, offset };
 }
 
 export async function payoff(pool, appCfg) {
@@ -97,12 +121,12 @@ export async function payoff(pool, appCfg) {
     charged_avg_cents: Math.round(m.chargedAvg),
     on_track: m.debts.length === 0 || m.plan.paidOff,
     reason,
-    debt_free_month: m.plan.paidOff ? addMonths(now, m.plan.payoffMonths) : null,
-    months_left: m.plan.paidOff ? m.plan.payoffMonths : null,
+    debt_free_month: m.plan.paidOff ? addMonths(now, m.plan.payoffMonths + m.offset) : null,
+    months_left: m.plan.paidOff ? m.plan.payoffMonths + m.offset : null,
     interest_remaining_cents: m.plan.paidOff ? m.plan.totalInterestCents : null,
     min_only: {
       monthly_cents: m.minOnlyCents,
-      debt_free_month: m.minOnly.paidOff ? addMonths(now, m.minOnly.payoffMonths) : null,
+      debt_free_month: m.minOnly.paidOff ? addMonths(now, m.minOnly.payoffMonths + m.offset) : null,
       interest_cents: m.minOnly.paidOff ? m.minOnly.totalInterestCents : null,
     },
     next_target: target ? { name: target.name, apr_bps: target.apr_bps } : null,
@@ -179,13 +203,15 @@ export async function balanceTrend(pool, appCfg, params) {
     .sort((a, b) => a.t.localeCompare(b.t));
   const peak = history.reduce((p, h) => (!p || h.balance_cents > p.balance_cents ? h : p), null);
 
-  // Monthly projection points continue the line from today until zero.
+  // Monthly projection points continue the line from today until zero: each
+  // is the balance at the end of its plan month, which starts this month or
+  // next (model.offset), the same months the debt-free date counts.
   const projection = [];
   if (model.plan.paidOff && history.length) {
     const today = new Date();
     projection.push({ t: history[history.length - 1].t, balance_cents: history[history.length - 1].balance_cents });
     for (const mo of model.plan.months) {
-      const d = new Date(today.getFullYear(), today.getMonth() + mo.monthIndex, today.getDate());
+      const d = new Date(today.getFullYear(), today.getMonth() + mo.monthIndex + model.offset, 0);
       projection.push({ t: ymd(d), balance_cents: mo.totalBalanceCents });
     }
   }
