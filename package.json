@@ -3,7 +3,10 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "workspaces": ["server", "web"],
+  "workspaces": [
+    "server",
+    "web"
+  ],
   "scripts": {
     "dev": "npm run dev -w web",
     "build": "npm run build -w web",
@@ -14,7 +17,11 @@
     "seed:admin": "node scripts/seed-admin.js",
     "test": "npm run test -w server && npm run test -w web",
     "test:watch": "concurrently -n server,web -c blue,green \"npm run test:watch -w server\" \"npm run test:watch -w web\"",
-    "test:e2e": "npm run test:e2e -w web"
+    "test:e2e": "npm run test:e2e -w web",
+    "jobs:cron": "node operations/cli.cjs cron",
+    "jobs:install": "node operations/cli.cjs install",
+    "jobs:check": "node operations/check.cjs",
+    "jobs:test": "node --test operations/*.test.cjs"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

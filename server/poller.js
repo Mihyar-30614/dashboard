@@ -1,3 +1,4 @@
+import jobs from "../operations/jobs.cjs";
 import { query } from "./db.js";
 import { loadApps } from "./config.js";
 import { snapshot as pm2Snapshot } from "./collectors/pm2.js";
@@ -10,6 +11,7 @@ const TRIM_INITIAL_DELAY_MS = 5 * 60 * 1000;
 const SAMPLE_RETENTION_DAYS = 90;
 
 let timer;
+let trimJob;
 let lastTick = { startedAt: null, ms: null, errors: [] };
 
 async function persistSample(slug, metric, value) {
@@ -61,12 +63,20 @@ async function trimOld() {
 
 export function startPoller() {
   if (timer) return;
-  runTick();
-  timer = setInterval(runTick, TICK_MS);
-  setTimeout(function tick() {
-    trimOld().catch((e) => console.error("trim_failed", e));
-    setTimeout(tick, TRIM_INTERVAL_MS);
-  }, TRIM_INITIAL_DELAY_MS);
+  timer = jobs.intervalJob('poller', TICK_MS, async () => {
+    const tick = await runTick();
+    if (tick.errors.length) throw new Error('Metric collection failed');
+  }, { immediate: true, unref: false });
+  trimJob = jobs.intervalJob('sample-retention', TRIM_INTERVAL_MS, trimOld, {
+    initialDelayMs: TRIM_INITIAL_DELAY_MS,
+  });
+}
+
+export async function stopPoller() {
+  const active = [timer, trimJob];
+  timer = null;
+  trimJob = null;
+  await Promise.all(active.map(job => job?.stop()));
 }
 
 export function getLastTick() {

@@ -1,0 +1,59 @@
+{
+  "app": "dashboard",
+  "logDirectory": "operations/.state/logs",
+  "envFile": ".env",
+  "dependencyDirectory": "server",
+  "applicationJobs": [
+    {
+      "name": "poller",
+      "maxAgeMs": 120000,
+      "disabledEnv": "POLLER"
+    },
+    {
+      "name": "sample-retention",
+      "maxAgeMs": 93600000,
+      "disabledEnv": "POLLER"
+    }
+  ],
+  "hostJobs": [
+    {
+      "name": "database-backup",
+      "schedule": "40 3 * * *",
+      "command": [
+        "$NODE",
+        "operations/backup-database.cjs"
+      ],
+      "cwd": ".",
+      "maxAgeMs": 93600000
+    },
+    {
+      "name": "job-log-retention",
+      "schedule": "55 3 * * *",
+      "command": [
+        "$NODE",
+        "operations/rotate-job-logs.cjs"
+      ],
+      "cwd": ".",
+      "maxAgeMs": 93600000
+    },
+    {
+      "name": "operations-check",
+      "schedule": "*/5 * * * *",
+      "command": [
+        "$NODE",
+        "operations/check.cjs"
+      ],
+      "cwd": ".",
+      "maxAgeMs": 900000,
+      "timeoutMs": 240000
+    }
+  ],
+  "legacyLines": [],
+  "legacyCommands": [
+    "scripts/backup-database.js",
+    "scripts/offsite-backup.sh",
+    "scripts/rotate-logs.js",
+    "scripts/check-operations.js",
+    "scripts/backup.sh"
+  ]
+}

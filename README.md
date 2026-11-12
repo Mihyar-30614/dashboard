@@ -110,3 +110,26 @@ Automate syncing **`web/dist`** into **`web-prod/`** with whatever fits your hos
 ## License
 
 Private project (`"private": true` in `package.json`); add a license file if you publish or share the repo.
+
+## Scheduled work
+
+`operations/schedule.json` defines host maintenance and job-health deadlines.
+Polling retains its 30-second interval and sample retention its daily interval
+with a five-minute startup delay. The common runtime prevents overlapping runs,
+records execution health and cancels both timers during graceful shutdown.
+`POLLER=off` also excludes those jobs from status checks.
+
+The prepared user-cron block adds a **local-only** database backup at **03:40
+America/Halifax**. `scripts/backup.sh` loads the app's DB settings through the new
+backup runner, writes private compressed SQL under `backups/database/`, and keeps
+14 successful dumps. `BACKUP_DIR` still overrides the shell helper's destination;
+cron uses the default. Backups are published only after dumping and compression
+succeed. Restore with `gzip -dc archive.sql.gz | psql ...` into a separate database.
+No offsite job, upload backup or configuration backup is added.
+
+Use `npm run jobs:cron`, `jobs:install`, `jobs:check`, and `jobs:test` to preview,
+install, inspect and test scheduled work. Five-minute checks report job failures
+or stale execution; daily rotation bounds managed runner logs. Run the host rollout
+`/mnt/storage/apps/standardize-jobs.sh` to activate; the parent `APPS_AND_PORTS.md`
+describes the shared policy. Installation and PM2 restart remain unverified in the
+restricted implementation session.
