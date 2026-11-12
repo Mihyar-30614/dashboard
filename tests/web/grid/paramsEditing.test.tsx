@@ -44,6 +44,18 @@ describe("ParamsPopover", () => {
     expect((screen.getByLabelText("chart_type") as HTMLSelectElement).value).toBe("line");
   });
 
+  it("shows page default when the stored range is only the schema default", () => {
+    render(
+      <ParamsPopover
+        schema={[RANGE_FIELD]}
+        params={{ range: "30d" }}
+        onSave={() => {}}
+        onClose={() => {}}
+      />,
+    );
+    expect((screen.getByLabelText("range") as HTMLSelectElement).value).toBe("");
+  });
+
   it("shows page default for an unset range", () => {
     render(
       <ParamsPopover
@@ -69,7 +81,7 @@ describe("ParamsPopover", () => {
     fireEvent.change(screen.getByLabelText("range"), { target: { value: "90d" } });
     fireEvent.change(screen.getByLabelText("key"), { target: { value: "arr" } });
     fireEvent.click(screen.getByText("Apply"));
-    expect(onSave).toHaveBeenCalledWith({ range: "90d", key: "arr" });
+    expect(onSave).toHaveBeenCalledWith({ range: "90d", rangePinned: true, key: "arr" });
   });
 });
 
@@ -119,6 +131,6 @@ describe("WidgetFrame gear", () => {
     fireEvent.click(screen.getByLabelText("Widget settings"));
     fireEvent.change(screen.getByLabelText("range"), { target: { value: "7d" } });
     fireEvent.click(screen.getByText("Apply"));
-    expect(onSave).toHaveBeenCalledWith({ range: "7d" });
+    expect(onSave).toHaveBeenCalledWith({ range: "7d", rangePinned: true });
   });
 });

@@ -3,7 +3,7 @@ import { X } from "lucide-react";
 import { WIDGETS } from "../widgets/registry";
 import { useSqlWidget } from "../api/sqlWidgets";
 import type { GridWidget } from "./GridCanvas";
-import { effectiveParams, PAGE_RANGES } from "./useLayoutPage";
+import { effectiveParams, PAGE_RANGES, rangeDefault } from "./useLayoutPage";
 
 export default function DrilldownModal({
   widget,
@@ -14,9 +14,13 @@ export default function DrilldownModal({
   pageRange: string;
   onClose: () => void;
 }) {
-  const base = effectiveParams(widget.params, pageRange);
-  const [range, setRange] = useState<string>(String(base.range));
   const def = WIDGETS[widget.kind];
+  const base = effectiveParams(
+    widget.params,
+    pageRange,
+    rangeDefault(def?.paramsSchema),
+  );
+  const [range, setRange] = useState<string>(String(base.range));
   const sqlId = widget.kind === "sql" ? Number(base.widget_id) : NaN;
   const sqlDef = useSqlWidget(sqlId);
   if (!def) return null;

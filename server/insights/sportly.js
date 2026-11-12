@@ -2,26 +2,44 @@
 // paid game holds or debits the fee, the host is settled into their own
 // wallet, and withdrawals are paid out by an admin.
 
-export async function walletMoney(pool) {
+const RANGE_DAYS = { "7d": 7, "30d": 30, "90d": 90 };
+
+export async function walletMoney(pool, _appCfg, params = {}) {
+  const days = RANGE_DAYS[params.range] ?? null;
   const [{ rows: [t] }, { rows: series }] = await Promise.all([
     pool.query(
       `SELECT
-         (SELECT COALESCE(SUM(amount_cents), 0) FROM incoming_bank_transfers WHERE purpose = 'credit')::float8 AS added_cents,
-         (SELECT COUNT(*) FROM incoming_bank_transfers WHERE purpose = 'credit')::int AS added_count,
-         (SELECT COALESCE(SUM(amount_cents), 0) FROM wallet_withdrawals WHERE status = 'paid' AND returned_at IS NULL)::float8 AS withdrawn_cents,
-         (SELECT COUNT(*) FROM wallet_withdrawals WHERE status = 'paid' AND returned_at IS NULL)::int AS withdrawn_count,
+         (SELECT COALESCE(SUM(amount_cents), 0) FROM incoming_bank_transfers
+           WHERE purpose = 'credit'
+             AND ($1::int IS NULL OR recorded_at::date >= CURRENT_DATE - ($1::int - 1)))::float8 AS added_cents,
+         (SELECT COUNT(*) FROM incoming_bank_transfers
+           WHERE purpose = 'credit'
+             AND ($1::int IS NULL OR recorded_at::date >= CURRENT_DATE - ($1::int - 1)))::int AS added_count,
+         (SELECT COALESCE(SUM(amount_cents), 0) FROM wallet_withdrawals
+           WHERE status = 'paid' AND returned_at IS NULL
+             AND ($1::int IS NULL OR resolved_at::date >= CURRENT_DATE - ($1::int - 1)))::float8 AS withdrawn_cents,
+         (SELECT COUNT(*) FROM wallet_withdrawals
+           WHERE status = 'paid' AND returned_at IS NULL
+             AND ($1::int IS NULL OR resolved_at::date >= CURRENT_DATE - ($1::int - 1)))::int AS withdrawn_count,
          (SELECT COALESCE(SUM(amount_cents), 0) FROM wallet_withdrawals WHERE status = 'pending')::float8 AS pending_withdrawal_cents,
          (SELECT COALESCE(SUM(balance_cents), 0) FROM wallets)::float8 AS wallets_cents,
          (SELECT COUNT(*) FROM wallets WHERE balance_cents > 0)::int AS wallets_funded,
-         (SELECT COALESCE(SUM(amount_cents), 0) FROM wallet_holds WHERE status = 'held')::float8 AS held_cents`,
+         (SELECT COALESCE(SUM(amount_cents), 0) FROM wallet_holds WHERE status = 'held')::float8 AS held_cents,
+         (SELECT COALESCE(SUM(amount_cents), 0) FROM incoming_bank_transfers WHERE purpose = 'credit')::float8 AS added_all_cents,
+         (SELECT COALESCE(SUM(amount_cents), 0) FROM wallet_withdrawals WHERE status = 'paid' AND returned_at IS NULL)::float8 AS withdrawn_all_cents`,
+      [days],
     ),
     pool.query(
       `WITH ev AS (
          SELECT recorded_at::date AS d, amount_cents AS added, 0 AS withdrawn
-           FROM incoming_bank_transfers WHERE purpose = 'credit'
+           FROM incoming_bank_transfers
+          WHERE purpose = 'credit'
+            AND ($1::int IS NULL OR recorded_at::date >= CURRENT_DATE - ($1::int - 1))
          UNION ALL
          SELECT resolved_at::date, 0, amount_cents
-           FROM wallet_withdrawals WHERE status = 'paid' AND returned_at IS NULL AND resolved_at IS NOT NULL
+           FROM wallet_withdrawals
+          WHERE status = 'paid' AND returned_at IS NULL AND resolved_at IS NOT NULL
+            AND ($1::int IS NULL OR resolved_at::date >= CURRENT_DATE - ($1::int - 1))
        ), daily AS (
          SELECT d, SUM(added) AS added, SUM(withdrawn) AS withdrawn FROM ev GROUP BY d
        )
@@ -29,20 +47,55 @@ export async function walletMoney(pool) {
               (SUM(added) OVER (ORDER BY d))::float8 AS added_cents,
               (SUM(withdrawn) OVER (ORDER BY d))::float8 AS withdrawn_cents
          FROM daily ORDER BY d`,
+      [days],
     ),
   ]);
   // Pending withdrawals are already debited from the wallet, so they sit on
   // the "still owed" side alongside balances and holds.
   const owed = t.wallets_cents + t.held_cents + t.pending_withdrawal_cents;
   return {
-    ...t,
+    added_cents: t.added_cents,
+    added_count: t.added_count,
+    withdrawn_cents: t.withdrawn_cents,
+    withdrawn_count: t.withdrawn_count,
+    pending_withdrawal_cents: t.pending_withdrawal_cents,
+    wallets_cents: t.wallets_cents,
+    wallets_funded: t.wallets_funded,
+    held_cents: t.held_cents,
     owed_cents: owed,
-    difference_cents: t.added_cents - t.withdrawn_cents - owed,
+    // Reconciliation stays all-time: wallet balances are a point in time.
+    difference_cents: t.added_all_cents - t.withdrawn_all_cents - owed,
     series,
   };
 }
 
-export async function moneyFlow(pool, _appCfg, params) {
+export async function moneyFlow(pool, _appCfg, params = {}) {
+  const days = RANGE_DAYS[params.range];
+  if (days) {
+    const { rows } = await pool.query(
+      `WITH bounds AS (
+         SELECT (CURRENT_DATE - ($1::int - 1))::timestamp AS start_day,
+                date_trunc('week', (CURRENT_DATE - ($1::int - 1))::timestamp) AS start_week,
+                date_trunc('week', NOW()) AS end_week
+       ), weeks AS (
+         SELECT generate_series(start_week, end_week, INTERVAL '1 week') AS w
+           FROM bounds
+       )
+       SELECT to_char(wk.w, 'YYYY-MM-DD') AS week,
+              COALESCE(SUM(t.amount_cents) FILTER (WHERE t.kind = 'admin_credit'), 0)::float8 AS topups_cents,
+              COALESCE(-SUM(t.amount_cents) FILTER (WHERE t.kind IN ('join_paid', 'join_hold')), 0)::float8 AS fees_cents,
+              COALESCE(SUM(t.amount_cents) FILTER (WHERE t.kind = 'host_settle'), 0)::float8 AS host_cents,
+              COALESCE(-SUM(t.amount_cents) FILTER (WHERE t.kind = 'withdraw_request'), 0)::float8 AS withdrawn_cents
+         FROM weeks wk
+         CROSS JOIN bounds b
+         LEFT JOIN wallet_transactions t
+           ON t.created_at >= GREATEST(wk.w, b.start_day)
+          AND t.created_at < wk.w + INTERVAL '1 week'
+        GROUP BY wk.w ORDER BY wk.w`,
+      [days],
+    );
+    return { weeks: rows };
+  }
   const weeks = { "8w": 8, "12w": 12, "26w": 26 }[params.period] || 12;
   const { rows } = await pool.query(
     `WITH weeks AS (
@@ -92,7 +145,7 @@ export async function funnel(pool) {
 }
 
 export async function growth(pool, _appCfg, params) {
-  const days = { "7d": 7, "30d": 30, "90d": 90 }[params.range] || 30;
+  const days = RANGE_DAYS[params.range] || 30;
   const { rows } = await pool.query(
     `WITH days AS (
        SELECT generate_series(CURRENT_DATE - ($1::int - 1), CURRENT_DATE, INTERVAL '1 day')::date AS d

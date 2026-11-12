@@ -52,7 +52,7 @@ const KINDS = {
   traffic: ({ appCfg }) => traffic(appCfg),
   app_status: appStatus,
   uptime: async ({ params, appCfg }) => {
-    const hours = { "24h": 24, "7d": 168, "30d": 720 }[params.range] || 168;
+    const hours = { "24h": 24, "7d": 168, "30d": 720, "90d": 2160 }[params.range] || 168;
     const BUCKETS = 48;
     const { rows } = await query(
       `WITH samples AS (
@@ -87,7 +87,7 @@ const KINDS = {
   dm_category_movers: ({ pool, appCfg }) => dm.categoryMovers(pool, appCfg),
   dm_bills_due: ({ pool, appCfg, params }) => dm.billsDue(pool, appCfg, params),
 
-  sp_wallet_money: ({ pool }) => sp.walletMoney(pool),
+  sp_wallet_money: ({ pool, params }) => sp.walletMoney(pool, null, params),
   sp_money_flow: ({ pool, appCfg, params }) => sp.moneyFlow(pool, appCfg, params),
   sp_funnel: ({ pool }) => sp.funnel(pool),
   sp_growth: ({ pool, appCfg, params }) => sp.growth(pool, appCfg, params),

@@ -9,6 +9,18 @@ describe("effectiveParams", () => {
 
   it("keeps an explicitly pinned range", () => {
     expect(effectiveParams({ range: "90d" }, "7d")).toEqual({ range: "90d" });
+    expect(effectiveParams({ range: "90d" }, "7d", "30d")).toEqual({ range: "90d" });
+    expect(effectiveParams({ range: "30d", rangePinned: true }, "7d", "30d")).toEqual({
+      range: "30d",
+    });
+  });
+
+  it("lets the page range replace a schema default stored on the widget", () => {
+    expect(effectiveParams({ range: "30d" }, "7d", "30d")).toEqual({ range: "7d" });
+    expect(effectiveParams({ range: "7d", period: "12w" }, "90d", "7d")).toEqual({
+      range: "90d",
+      period: "12w",
+    });
   });
 });
 

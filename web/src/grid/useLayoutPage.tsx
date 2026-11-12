@@ -27,12 +27,29 @@ export function sqlDefaultSize(viz?: string): { w: number; h: number } {
 
 export const PAGE_RANGES = ["7d", "30d", "90d"] as const;
 
+export function rangeDefault(
+  schema: { name: string; type: string; default?: string | number }[] | undefined,
+): string | undefined {
+  const field = schema?.find((f) => f.name === "range" && f.type === "enum");
+  return typeof field?.default === "string" ? field.default : undefined;
+}
+
+// A stored range blocks the page picker only when it was chosen on purpose:
+// the pin flag, or a value other than the schema default baked into a layout.
 export function effectiveParams(
   params: Record<string, unknown> | undefined,
   pageRange: string,
+  schemaDefault?: string,
 ): Record<string, unknown> {
   const p = { ...(params ?? {}) };
-  if (p.range == null || p.range === "") p.range = pageRange;
+  const stored = p.range;
+  const hasStored = stored != null && stored !== "";
+  const pinned =
+    p.rangePinned === true
+      ? hasStored
+      : hasStored && (schemaDefault === undefined || stored !== schemaDefault);
+  if (!pinned) p.range = pageRange;
+  delete p.rangePinned;
   return p;
 }
 
@@ -307,7 +324,7 @@ export function useLayoutPage({
           <ExpandContext.Provider value={{ onExpand: () => setExpanded(w) }}>
             <C
               app={w.app}
-              params={effectiveParams(w.params, pageRange)}
+              params={effectiveParams(w.params, pageRange, rangeDefault(def.paramsSchema))}
               onRemove={() => requestRemove(w.id)}
             />
           </ExpandContext.Provider>

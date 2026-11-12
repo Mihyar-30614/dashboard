@@ -140,8 +140,16 @@ describe('GET /api/metrics/:kind', () => {
   });
 
   it('uptime falls back to 7d on unknown range', async () => {
+    const res = await agent.get('/api/metrics/uptime?app=sportly&range=nope');
+    expect(res.status).toBe(200);
+    expect(res.body.data.hours).toBe(168);
+    expect(res.body.data.buckets).toHaveLength(48);
+  });
+
+  it('uptime accepts the page 90d range', async () => {
     const res = await agent.get('/api/metrics/uptime?app=sportly&range=90d');
     expect(res.status).toBe(200);
+    expect(res.body.data.hours).toBe(2160);
     expect(res.body.data.buckets).toHaveLength(48);
   });
 });

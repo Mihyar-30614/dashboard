@@ -32,11 +32,15 @@ type Wallet = {
   series: { t: string; added_cents: number; withdrawn_cents: number }[];
 };
 
-export function SpWalletMoney({ onRemove }: WidgetProps) {
-  const { data: d, error, loading } = useInsight<Wallet>("sp_wallet_money", { app: APP });
+export function SpWalletMoney({ params = {}, onRemove }: WidgetProps) {
+  const range = params.range || "";
+  const { data: d, error, loading } = useInsight<Wallet>("sp_wallet_money", {
+    app: APP,
+    ...(range ? { range } : {}),
+  });
   const balanced = d && Math.abs(d.difference_cents) < 1;
   return (
-    <InsightFrame title="Wallet money" meta="all time" loading={loading} error={error} onRemove={onRemove}>
+    <InsightFrame title="Wallet money" meta={range || "all time"} loading={loading} error={error} onRemove={onRemove}>
       {d && (
         <div className="ins-stack ins-stack--fill">
           <Stats
@@ -54,8 +58,8 @@ export function SpWalletMoney({ onRemove }: WidgetProps) {
           />
           <Note tone={balanced ? "ok" : "warn"}>
             {balanced
-              ? "Balanced: added − withdrawn equals what players still hold."
-              : `Off by ${money(d.difference_cents, C, { sign: true })}: added − withdrawn ≠ wallets + held + pending.`}
+              ? "All time: added − withdrawn equals what players still hold."
+              : `All time off by ${money(d.difference_cents, C, { sign: true })}: added − withdrawn ≠ wallets + held + pending.`}
           </Note>
           {d.series.length > 1 && (
             <SeriesChart
@@ -81,12 +85,16 @@ type Flow = {
 };
 
 export function SpMoneyFlow({ params = {}, onRemove }: WidgetProps) {
+  const range = params.range || "";
   const period = params.period || "12w";
-  const { data: d, error, loading } = useInsight<Flow>("sp_money_flow", { app: APP, period });
+  const { data: d, error, loading } = useInsight<Flow>(
+    "sp_money_flow",
+    range ? { app: APP, range } : { app: APP, period },
+  );
   const sum = (k: keyof Flow["weeks"][number]) => d?.weeks.reduce((s, w) => s + (w[k] as number), 0) ?? 0;
   const thisWeek = d?.weeks.at(-1);
   return (
-    <InsightFrame title="Money flow" meta={`weekly · ${period}`} loading={loading} error={error} onRemove={onRemove}>
+    <InsightFrame title="Money flow" meta={range ? `weekly · ${range}` : `weekly · ${period}`} loading={loading} error={error} onRemove={onRemove}>
       {d && (
         <div className="ins-stack ins-stack--fill">
           <Stats

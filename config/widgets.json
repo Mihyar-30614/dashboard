@@ -100,7 +100,8 @@
         "values": [
           "24h",
           "7d",
-          "30d"
+          "30d",
+          "90d"
         ],
         "default": "7d"
       }
@@ -300,14 +301,14 @@
     ],
     "paramsSchema": [
       {
-        "name": "period",
+        "name": "range",
         "type": "enum",
         "values": [
-          "8w",
-          "12w",
-          "26w"
+          "7d",
+          "30d",
+          "90d"
         ],
-        "default": "12w"
+        "default": "30d"
       }
     ]
   },

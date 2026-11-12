@@ -41,7 +41,7 @@ export function defaultBoard(screen, slugs) {
     return place(
       [
         [w("app_status", screen, 8, 2), w("traffic", screen, 4, 2)],
-        [w("sp_wallet_money", screen, 6, 5), w("sp_money_flow", screen, 6, 5, { period: "12w" })],
+        [w("sp_wallet_money", screen, 6, 5), w("sp_money_flow", screen, 6, 5)],
         [w("sp_funnel", screen, 4, 5), w("sp_retention", screen, 4, 5), w("sp_invites", screen, 4, 5)],
         [w("sp_growth", screen, 8, 4, { range: "30d" }), w("sp_admin_todos", screen, 4, 4)],
         [w("sp_games", screen, 12, 5)],

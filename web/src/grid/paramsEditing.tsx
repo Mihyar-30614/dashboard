@@ -44,6 +44,10 @@ export function ParamsPopover({
   const [draft, setDraft] = useState<Record<string, unknown>>(() => {
     const d: Record<string, unknown> = { ...params };
     for (const f of fields) {
+      // A schema default copied into the layout is not a pin.
+      if (followsPage(f) && d.rangePinned !== true && d[f.name] === f.default) {
+        delete d[f.name];
+      }
       if (d[f.name] === undefined && f.default !== undefined && !followsPage(f)) {
         d[f.name] = f.default;
       }
@@ -119,6 +123,10 @@ export function ParamsPopover({
               else if (f.type === "number" && out[f.name] !== undefined) {
                 out[f.name] = Number(out[f.name]);
               }
+            }
+            if (fields.some(followsPage)) {
+              if (out.range) out.rangePinned = true;
+              else delete out.rangePinned;
             }
             onSave(out);
             onClose();
